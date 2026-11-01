@@ -229,7 +229,8 @@ function build(rx, profile, images, scale) {
       y += 40 * kb;
     } else {
       text(M, y + 18 * kb, reqTitle + (cont ? ' (continued)' : ''), 'bold', 13 * kb, accent);
-      y += 34 * kb;
+      // two lines of space under the title before the first group
+      y += 54 * kb;
     }
     return limit;
   }
