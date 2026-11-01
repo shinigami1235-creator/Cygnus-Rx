@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cygnus Rx</title>
+<meta name="theme-color" content="#101C2B">
+<meta name="description" content="Prescriptions and laboratory requests, signed and sent to the patient">
+<link rel="icon" href="favicon.ico">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cygnus Rx">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand"><img src="brand-assets/cygnus-swan.png" alt=""><span>Cygnus Rx</span></div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-view="write"><span class="long">New prescription</span><span class="short">New</span></button>
+    <button class="tab" data-view="history">History</button>
+    <button class="tab" data-view="profile"><span class="long">Doctor and clinic</span><span class="short">Doctor</span></button>
+  </nav>
+  <div class="bar-status" id="bar-status"></div>
+</header>
+
+<!-- ── write ─────────────────────────────────────────────── -->
+<main class="view" id="view-write">
+  <section class="editor" id="editor">
+    <div class="card">
+      <div class="card-head"><h2>Patient</h2><button class="btn-ghost sm" id="clear-draft">Start over</button></div>
+      <div class="grid g-patient">
+        <label class="f span2">Name<input id="p-name" list="patient-list" autocomplete="off" placeholder="Juan Dela Cruz"></label>
+        <label class="f">Sex<select id="p-sex"><option value=""></option><option>F</option><option>M</option></select></label>
+        <label class="f">Birthdate<input id="p-birthdate" type="date"></label>
+        <label class="f">Age<input id="p-age" inputmode="numeric" placeholder="34"></label>
+        <label class="f">Weight, kg<input id="p-weight" inputmode="decimal" placeholder="For children"></label>
+        <label class="f span2">Address<input id="p-address" placeholder="Barangay, city"></label>
+        <label class="f">Date<input id="rx-date" type="date"></label>
+      </div>
+      <datalist id="patient-list"></datalist>
+      <p class="meta" id="p-known"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Medicines</h2>
+        <div class="head-acts"><button class="btn-ghost sm" id="add-saved">Add from favourites</button><button class="btn-ghost sm" id="save-set">Save list as a set</button></div>
+      </div>
+      <div id="meds"></div>
+      <button class="btn-add" id="add-med">+ Add medicine</button>
+    </div>
+
+    <div class="card" id="req-card">
+      <div class="card-head"><h2>Laboratory and imaging</h2>
+        <div class="head-acts"><button class="btn-ghost sm" id="add-tests">Add tests</button></div>
+      </div>
+      <div id="req-list"></div>
+      <div id="req-more">
+        <div class="grid g-2">
+          <label class="f">Clinical impression<input id="req-impression" placeholder="Acne vulgaris, for isotretinoin"></label>
+          <label class="f">Notes to the laboratory or imaging center<input id="req-notes" placeholder="Send the results to the clinic email"></label>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" id="req-prep"> Print patient preparation</label>
+        <ul class="prep-list" id="prep-list"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Instructions and dates</h2>
+      <label class="f">Instructions to the patient<textarea id="rx-notes" rows="3" placeholder="Use sunscreen SPF 50 every morning. Avoid the sun for 2 weeks."></textarea></label>
+      <div class="grid g-dates">
+        <label class="f">Follow-up<input id="rx-follow" type="date"></label>
+        <label class="f">Valid for<select id="rx-valid">
+          <option value="">No end date</option><option value="7">7 days</option><option value="14">14 days</option>
+          <option value="30">30 days</option><option value="90">90 days</option><option value="180">6 months</option></select></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Signature</h2><label class="check"><input type="checkbox" id="rx-sign"> Sign this prescription</label></div>
+      <div class="sig-row">
+        <div class="sig-current" id="sig-current"></div>
+        <div class="sig-acts">
+          <button class="btn-gold link-only" id="sig-tablet">Sign on tablet</button>
+          <button class="btn-ghost" id="sig-draw">Sign here</button>
+          <button class="btn-ghost" id="sig-more">Type or photo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="desk">
+    <div class="desk-head">
+      <button class="btn-ghost sm desk-close" id="desk-close">Back to editing</button>
+      <span id="paper-label"></span>
+      <span class="desk-opts">
+        <label class="mini-check"><input type="checkbox" id="opt-middle"> Center on the page</label>
+        <label class="mini-check"><input type="checkbox" id="opt-big"> Larger text when there is room</label>
+      </span>
+      <span id="rx-no-preview"></span>
+    </div>
+    <div class="pages" id="pages"></div>
+    <div class="finish">
+      <p class="finish-msg" id="finish-msg"></p>
+      <button class="btn-primary lg" id="finish">Finish and send</button>
+    </div>
+  </aside>
+  <div class="mbar">
+    <p class="finish-msg" id="m-msg"></p>
+    <button class="btn-ghost" id="m-preview">Preview</button>
+    <button class="btn-primary" id="m-finish">Finish and send</button>
+  </div>
+</main>
+
+<!-- ── history ───────────────────────────────────────────── -->
+<main class="view" id="view-history" hidden>
+  <div class="page-wrap">
+    <div class="row-between"><h1>History</h1><div class="head-acts"><input class="field search" id="h-search" placeholder="Patient, medicine, test or Rx number"></div></div>
+    <table class="list" id="h-table"><thead><tr><th>Date</th><th>Rx No.</th><th>Patient</th><th>Contents</th><th>Sent</th><th></th></tr></thead><tbody></tbody></table>
+    <p class="empty" id="h-empty" hidden>No prescriptions yet.</p>
+  </div>
+</main>
+
+<!-- ── profile ───────────────────────────────────────────── -->
+<main class="view" id="view-profile" hidden>
+  <div class="page-wrap narrow">
+    <h1>Doctor and clinic</h1>
+    <p class="lead" id="first-run" hidden>Fill in your details once and they print at the top and bottom of every prescription. Your PRC and PTR numbers go under your signature.</p>
+    <div class="card">
+      <h2>Doctor</h2>
+      <div class="grid g-2">
+        <label class="f">Full name<input data-p="name" placeholder="Juan Paolo Santos"></label>
+        <label class="f">Title after the name<input data-p="suffix" placeholder="MD"></label>
+        <label class="f span2">Specialty or practice line<input data-p="specialty" placeholder="Aesthetic Medicine"></label>
+        <label class="f">PRC license no.<input data-p="prc" inputmode="numeric" placeholder="0123456"></label>
+        <label class="f">PTR no.<input data-p="ptr" placeholder="1234567, 5 Jan 2026, Makati"></label>
+        <label class="f">S2 license no.<input data-p="s2" placeholder="Only if you hold one"></label>
+        <label class="f">Other license line<input data-p="extraLicense" placeholder="Thai Medical Council 12345"></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Clinic</h2>
+      <div class="grid g-2">
+        <label class="f span2">Clinic name<input data-p="clinic" placeholder="Cygnus Aesthetics"></label>
+        <label class="f span2">Address<input data-p="address" placeholder="Unit 2, 45 Main Street, Naga City"></label>
+        <label class="f">Phone<input data-p="phone" placeholder="0917 123 4567"></label>
+        <label class="f">Email<input data-p="email" placeholder="clinic@example.com"></label>
+        <label class="f span2">Clinic hours<input data-p="hours" placeholder="Mon to Sat, 10am to 7pm"></label>
+      </div>
+      <div class="logo-row">
+        <div class="logo-box" id="logo-box"></div>
+        <div><input type="file" id="logo-file" accept="image/*" hidden>
+          <button class="btn-ghost" id="logo-pick">Choose logo</button>
+          <button class="btn-ghost" id="logo-clear">Remove logo</button>
+          <p class="meta">A PNG with a clear background prints cleanest.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Pad</h2>
+      <div class="grid g-2">
+        <label class="f">Paper size<select data-p="paper" id="paper-select"></select></label>
+        <label class="f">Next Rx number<input id="counter" inputmode="numeric"></label>
+        <label class="f span2">Line at the bottom<input data-p="footer" placeholder="Not valid without the doctor's signature."></label>
+      </div>
+      <div class="f">Accent colour<div class="swatches" id="swatches"></div></div>
+      <label class="check"><input type="checkbox" data-p="showRxNo"> Print the Rx number</label>
+    </div>
+    <div class="card">
+      <h2>Saved signatures</h2>
+      <div class="sig-lib" id="sig-lib"></div>
+    </div>
+    <div class="card">
+      <h2>Where your records are kept</h2>
+      <p class="meta">Prescriptions, patients and favourites are kept in Cygnus Rx on this device. Download a backup now and then, and restore it on another device to carry everything across.</p>
+      <div class="folder-row" id="folder-row" hidden>
+        <div><b>PDF folder</b><p class="meta" id="folder-name"></p></div>
+        <button class="btn-ghost" id="folder-pick">Choose folder</button>
+        <button class="btn-ghost" id="folder-forget" hidden>Stop saving there</button>
+      </div>
+      <div class="head-acts"><button class="btn-ghost" id="backup">Download backup</button><input type="file" id="restore-file" accept=".json,application/json" hidden><button class="btn-ghost" id="restore">Restore from backup</button></div>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

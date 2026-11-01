@@ -1,0 +1,161 @@
+/* ═══════════════════════════════════════════════════════════════
+   Cygnus Rx design tokens, drawn from the Cygnus palette.
+
+   The --cs-* values below are the design system as delivered, copied
+   across unchanged. Do not edit them here to restyle the app — change
+   them in the system and re-copy, or override the --app-* layer in
+   app.css, which is the only place this app reads from.
+
+   The system is light-first. The dark block further down remaps
+   surfaces onto brand navy and lifts the gold; the brand hues, type,
+   spacing, radii and focus treatment stay identical in both.
+   ═══════════════════════════════════════════════════════════════ */
+
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;
+  src:url("../vendor/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:500;font-display:swap;
+  src:url("../vendor/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;
+  src:url("../vendor/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:Cinzel;font-style:normal;font-weight:600;font-display:swap;
+  src:url("../vendor/fonts/cinzel-latin-600-normal.woff2") format("woff2")}
+
+:root{
+  /* ── brand ─────────────────────────────────────────────── */
+  --cs-brand-navy:       #101C2B;
+  --cs-brand-gold:       #C89A3C;
+  --cs-brand-gold-light: #E0B45A;
+  --cs-brand-gold-wash:  #F6EEDC;
+
+  /* ── primary ───────────────────────────────────────────── */
+  --cs-primary-50:  #F2F7FB;
+  --cs-primary-100: #E3EDF6;
+  --cs-primary-400: #1F5E99;
+  --cs-primary-600: #14497A;
+  --cs-primary-700: #0F3A62;
+  --cs-primary-800: #0B2C4B;
+
+  /* ── neutrals ──────────────────────────────────────────── */
+  --cs-n-000: #FFFFFF;
+  --cs-n-025: #F7F8FA;
+  --cs-n-050: #F1F3F6;
+  --cs-n-100: #E4E8ED;
+  --cs-n-200: #CFD5DE;
+  --cs-n-300: #AEB7C4;
+  --cs-n-500: #6B7686;
+  --cs-n-700: #414B59;
+  --cs-n-900: #1B222C;
+
+  /* ── status ────────────────────────────────────────────── */
+  --cs-danger:       #A31B1B;
+  --cs-danger-tint:  #FBE9E9;
+  --cs-warning:      #8A5A00;
+  --cs-warning-tint: #FBF0DA;
+  --cs-success:      #0E6B4F;
+  --cs-success-tint: #E4F1EC;
+
+  /* ── semantic ──────────────────────────────────────────── */
+  --cs-surface:       var(--cs-n-000);
+  --cs-surface-app:   var(--cs-n-025);
+  --cs-text:          var(--cs-n-900);
+  --cs-text-muted:    var(--cs-n-700);
+  --cs-text-meta:     var(--cs-n-500);
+  --cs-border:        var(--cs-n-100);
+  --cs-border-strong: var(--cs-n-200);
+  --cs-scrim:         rgba(16,28,43,.55);
+
+  /* ── type ──────────────────────────────────────────────── */
+  --cs-font:       "IBM Plex Sans", system-ui, sans-serif;
+  --cs-font-mono:  "IBM Plex Mono", monospace;
+  --cs-font-brand: Cinzel, Georgia, serif;
+  --cs-display:    600 34px/40px var(--cs-font);
+  --cs-heading:    600 21px/28px var(--cs-font);
+  --cs-body:       400 17px/26px var(--cs-font);
+  --cs-body-dense: 400 15px/22px var(--cs-font);
+  --cs-label:      500 14px/20px var(--cs-font);
+  --cs-micro:      600 12px/16px var(--cs-font);
+  --cs-num:        tabular-nums;
+
+  /* ── spacing (4px base) ────────────────────────────────── */
+  --cs-1: 4px;  --cs-2: 8px;  --cs-3: 12px; --cs-4: 16px;
+  --cs-5: 20px; --cs-6: 24px; --cs-8: 32px; --cs-10: 40px;
+  --cs-14: 56px; --cs-18: 72px;
+
+  /* ── radius ────────────────────────────────────────────── */
+  --cs-r-sm: 4px; --cs-r-md: 6px; --cs-r-lg: 10px;
+  --cs-r-sheet: 16px; --cs-r-pill: 999px;
+
+  /* ── elevation ─────────────────────────────────────────── */
+  --cs-e1: 0 1px 2px rgba(16,28,43,.06);
+  --cs-e2: 0 2px 8px rgba(16,28,43,.08);
+  --cs-e3: 0 8px 28px rgba(16,28,43,.16);
+
+  /* ── focus ─────────────────────────────────────────────── */
+  --cs-focus: 0 0 0 3px rgba(31,94,153,.28);
+  --cs-focus-outline: 2px solid var(--cs-primary-400);
+
+  /* ── targets ───────────────────────────────────────────── */
+  --cs-target: 48px;
+  --cs-target-dense: 40px;
+
+  /* ── icons ─────────────────────────────────────────────── */
+  --cs-icon-size-sm: 20px;
+  --cs-icon-size-lg: 24px;
+  --cs-icon-box-sm:  40px;
+  --cs-icon-box-lg:  48px;
+  --cs-icon-box-radius: var(--cs-r-md);
+  --cs-icon-gutter: var(--cs-2);
+  --cs-icon-stroke-default:  2.25;
+  --cs-icon-stroke-active:   2.75;
+  --cs-icon-stroke-disabled: 2;
+  --cs-icon-linecap:  round;
+  --cs-icon-linejoin: round;
+  --cs-icon-fg-default:  var(--cs-n-300);
+  --cs-icon-fg-hover:    var(--cs-n-100);
+  --cs-icon-fg-active:   var(--cs-brand-gold-light);
+  --cs-icon-fg-disabled: rgba(174,183,196,.38);
+  --cs-icon-fg-default-on-light: var(--cs-n-500);
+  --cs-icon-fg-hover-on-light:   var(--cs-n-900);
+  --cs-icon-fg-active-on-light:  var(--cs-brand-gold);
+  --cs-icon-bg-default:  transparent;
+  --cs-icon-bg-hover:    rgba(228,232,237,.07);
+  --cs-icon-bg-active:   rgba(224,180,90,.14);
+  --cs-icon-bg-disabled: transparent;
+  --cs-icon-border-default:  1px solid transparent;
+  --cs-icon-border-hover:    1px solid rgba(228,232,237,.14);
+  --cs-icon-border-active:   1px solid rgba(224,180,90,.40);
+  --cs-icon-border-disabled: 1px solid transparent;
+  --cs-icon-focus: var(--cs-focus);
+}
+
+/* ═══ dark ══════════════════════════════════════════════════
+   Surfaces move onto brand navy and the neutral ramp inverts.
+   Gold lightens one step so it holds contrast on a dark ground.
+   ═══════════════════════════════════════════════════════════ */
+:root[data-theme="dark"]{
+  --cs-surface:       #162334;
+  --cs-surface-app:   #0C1520;
+  --cs-text:          #EAEEF3;
+  --cs-text-muted:    #A7B2C1;
+  --cs-text-meta:     #7C8899;
+  --cs-border:        #22313f;
+  --cs-border-strong: #33475a;
+  --cs-scrim:         rgba(6,11,17,.66);
+
+  --cs-brand-gold:    var(--cs-brand-gold-light);
+  --cs-primary-400:   #4C8FCB;
+  --cs-primary-100:   #1B3D5C;
+  --cs-primary-50:    #16293c;
+
+  --cs-danger:        #E2736A;
+  --cs-danger-tint:   #3B1F1D;
+  --cs-warning:       #D9A441;
+  --cs-warning-tint:  #33280F;
+  --cs-success:       #4FBF98;
+  --cs-success-tint:  #12332A;
+
+  --cs-e1: 0 1px 2px rgba(0,0,0,.32);
+  --cs-e2: 0 2px 10px rgba(0,0,0,.40);
+  --cs-e3: 0 10px 34px rgba(0,0,0,.52);
+  --cs-focus: 0 0 0 3px rgba(76,143,203,.34);
+}
