@@ -34,15 +34,18 @@ function blankDraft() {
 let draft;
 
 // ── boot ───────────────────────────────────────────────────────
+// A saved draft with anything an older version did not keep filled in.
+function draftFrom(saved) {
+  const d = { ...blankDraft(), ...(saved || {}) };
+  d.patient = { ...blankDraft().patient, ...(d.patient || {}) };
+  if (!d.items?.length) d.items = [blankMed()];
+  return d;
+}
+
 async function boot() {
   await Promise.all([load(), loadFonts()]);
   data.archive ||= {};
-  draft = data.draft || blankDraft();
-  if (!draft.items?.length) draft.items = [blankMed()];
-  draft.tests ||= [];
-  if (draft.prep === undefined) draft.prep = true;
-  draft.prepEdits ||= {};
-  draft.prepExtra ||= [];
+  draft = draftFrom(data.draft);
   if (!storageOk) $('#bar-status').textContent = 'This browser is not letting Cygnus Rx save. Open it in Chrome, Edge or Safari outside private browsing.';
   document.body.classList.toggle('no-link', !linkPossible());
   $$('.tab').forEach(t => t.onclick = () => show(t.dataset.view));
@@ -988,8 +991,10 @@ function bindProfile() {
       Object.assign(data, incoming, { rev });
       data.archive ||= {};
       await save(true);
-      draft = data.draft || blankDraft();
+      draft = draftFrom(data.draft);
       fillProfile();
+      fillWrite();
+      renderHistory();
       toast('Backup restored.');
     } catch {
       toast(f.name + ' is not a Cygnus Rx backup.');
