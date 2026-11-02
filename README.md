@@ -109,8 +109,10 @@ and co-trimoxazole written as the total on the box, like 457 mg/5 mL, are
 read as their two parts.
 
 The notes come from product labels, the BNF, the Sanford Guide and LactMed,
-dated in `web/js/druginfo.js` as CHECKED, and were reviewed a second time on
-2 Nov 2026. They cover the starter list only. A medicine typed in that is
+dated in `web/js/druginfo.js` as CHECKED. On 3 Nov 2026 every medicine was
+checked against its US label on DailyMed, or the UK label where it is not sold
+in the US, since MIMS and PPD are not open to outside readers. Boxed warnings
+show in red at the top of the card. They cover the starter list only. A medicine typed in that is
 not on the list gets no card and no warnings.
 
 ## Certificates

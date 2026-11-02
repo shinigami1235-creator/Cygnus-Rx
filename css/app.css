@@ -358,6 +358,7 @@ body.no-link .link-only{display:none}
 .warn-line{margin:0;padding:6px 10px;border-radius:var(--cs-r-sm);font:400 13px/18px var(--cs-font);border-left:3px solid}
 .warn-line.avoid{background:var(--cs-danger-tint);border-color:var(--cs-danger);color:#5c1515}
 .warn-line.caution{background:var(--cs-warning-tint);border-color:var(--cs-warning);color:#4d3a08}
+.about .boxed{margin:0 0 var(--cs-3);padding:8px 12px;border:1.5px solid var(--cs-danger);border-radius:var(--cs-r-sm);background:var(--cs-danger-tint);color:#5c1515;font:400 13px/19px var(--cs-font)}
 .warn-line.info{background:var(--cs-primary-50);border-color:var(--cs-primary-400);color:var(--cs-primary-800)}
 .med.has-avoid{border-left-color:var(--cs-danger)}
 .med-kid{margin-top:var(--cs-3);padding:8px 10px;border-radius:var(--cs-r-sm);background:var(--cs-success-tint);font:400 13px/19px var(--cs-font);color:var(--cs-text)}

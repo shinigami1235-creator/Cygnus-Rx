@@ -74,6 +74,7 @@ export function openAbout(generic, route, onAdd, onBack) {
     <div class="m-head"><h2>${esc(cap(info.key))}</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
     <div class="m-body about">
       <p class="about-cls">${esc(info.cls)}${f.length && !(raw.oral && byMouth) ? ' &middot; ' + esc(f.join(', ')) : ''}${info.s2 ? ' <span class="lvl avoid">S2</span>' : ''}</p>
+      ${info.boxed ? `<p class="boxed"><b>Boxed warning.</b> ${esc(info.boxed)}</p>` : ''}
       ${info.cover ? `<h3>Coverage</h3>${coverChips(info.cover)}<p class="meta">Dark: reliable. Light: some, or resistance is common. Grey: none.</p>` : ''}
       ${line('Organisms', info.bugs)}${line('Viruses', info.virus)}${line('Fungi', info.fungi)}${line('Parasites', info.parasites)}
       ${list('Used for', info.uses)}
@@ -84,7 +85,7 @@ export function openAbout(generic, route, onAdd, onBack) {
       ${list('Watch for', info.watch)}
       ${line('Children', info.kids)}
       ${inter.length ? `<h3>Interactions</h3><ul>${inter.map(x => `<li><span class="lvl ${x.lvl}">${LEVEL[x.lvl]}</span> <b>${esc(cap(x.who))}.</b> ${esc(x.text)}</li>`).join('')}</ul>` : ''}
-      <p class="meta source">Written from product labels, the BNF, the Sanford Guide and LactMed, checked on ${fmtDate(CHECKED)}. Check the product label for the brand you prescribe.</p>
+      <p class="meta source">Written from product labels, the BNF, the Sanford Guide and LactMed. Checked against the US and UK labels on ${fmtDate(CHECKED)}. Check the product label for the brand you prescribe.</p>
     </div>
     <div class="m-foot">${other ? `<button class="btn-ghost" id="about-other">${other === 'oral' ? 'By mouth' : 'On the skin'}</button>` : ''}${onBack ? '<button class="btn-ghost" id="about-back">Back to results</button>' : '<button class="btn-ghost" data-close>Close</button>'}${onAdd ? '<button class="btn-primary" id="about-add">Add to prescription</button>' : ''}</div>`);
   if (onAdd) $('#about-add', m).onclick = () => { closeModal(); onAdd(info.key); };

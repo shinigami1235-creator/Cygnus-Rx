@@ -119,6 +119,8 @@ export function warnings(draft, profile = {}) {
 
     // age
     if (info.child && months !== null && months < info.child[0]) add(i, info.child[1], info.child[2]);
+    const kg = parseFloat(p.weight);
+    if (info.minKg && kg > 0 && kg < info.minKg[0]) add(i, info.minKg[1], info.minKg[2]);
 
     // dangerous drugs
     if (info.s2) {
