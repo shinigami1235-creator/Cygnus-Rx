@@ -10,7 +10,7 @@ import { currentSig, openSignatureModal, openHandoff, useSignature, deleteSignat
 import { openModal, closeModal, toast } from './ui.js';
 import { fmtDate, todayISO, addDays, uid, esc, slug, ageText } from './util.js';
 import { openPicker } from './picker.js';
-import { requestLine, groupOf, prepFor, modName } from './tests.js';
+import { requestLine, groupOf, prepLines, modName, PREP, PREP_LABELS } from './tests.js';
 import { sortTests } from './layout.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -25,7 +25,7 @@ function blankMed() {
   return { id: uid('m'), generic: '', brand: '', strength: '', form: '', qty: '', qtyUnit: '', route: 'oral', dose: '', area: '', freq: '', timing: '', duration: '', sig: '', sigEdited: false };
 }
 function blankDraft() {
-  return { patient: { name: '', sex: '', birthdate: '', age: '', weight: '', address: '' }, date: todayISO(), items: [blankMed()], notes: '', followUp: '', validDays: '', sign: true, tests: [], impression: '', reqNotes: '', prep: true };
+  return { patient: { name: '', sex: '', birthdate: '', age: '', weight: '', address: '' }, date: todayISO(), items: [blankMed()], notes: '', followUp: '', validDays: '', sign: true, tests: [], impression: '', reqNotes: '', prep: true, prepEdits: {}, prepExtra: [] };
 }
 let draft;
 
@@ -37,6 +37,8 @@ async function boot() {
   if (!draft.items?.length) draft.items = [blankMed()];
   draft.tests ||= [];
   if (draft.prep === undefined) draft.prep = true;
+  draft.prepEdits ||= {};
+  draft.prepExtra ||= [];
   if (!storageOk) $('#bar-status').textContent = 'This browser is not letting Cygnus Rx save. Open it in Chrome, Edge or Safari outside private browsing.';
   document.body.classList.toggle('no-link', !linkPossible());
   $$('.tab').forEach(t => t.onclick = () => show(t.dataset.view));
@@ -100,6 +102,25 @@ function bindWrite() {
   $('#req-impression').oninput = e => { draft.impression = e.target.value; changed(); };
   $('#req-notes').oninput = e => { draft.reqNotes = e.target.value; changed(); };
   $('#req-prep').onchange = e => { draft.prep = e.target.checked; renderTests(); changed(); };
+  $('#prep-list').addEventListener('input', e => {
+    if (!e.target.dataset.prep) return;
+    setPrep(e.target.closest('.prep-row').dataset.key, e.target.value);
+    fitArea(e.target);
+    changed();
+  });
+  $('#prep-list').addEventListener('click', e => {
+    if (!e.target.dataset.del) return;
+    const key = e.target.closest('.prep-row').dataset.key;
+    if (key.startsWith('extra:')) draft.prepExtra.splice(+key.slice(6), 1);
+    else draft.prepEdits[key] = '';
+    renderPrep();
+    changed();
+  });
+  $('#prep-add').onclick = () => {
+    draft.prepExtra.push('');
+    renderPrep();
+    $$('#prep-list textarea').at(-1)?.focus();
+  };
   $('#req-list').onclick = e => {
     const chip = e.target.closest('.req-chip');
     if (!chip) return;
@@ -330,8 +351,35 @@ function renderTests() {
     html += `<span class="req-chip${ask ? ' ask' : ''}" data-id="${t.id}" title="${t.kind === 'img' ? 'Change views, side or contrast' : 'Show in the list'}">${esc(requestLine(t))}${ask ? ' <b>pick a side</b>' : ''}<button class="x" aria-label="Remove">×</button></span>`;
   }
   box.innerHTML = html + '</div>';
-  const prep = prepFor(tests);
-  $('#prep-list').innerHTML = draft.prep !== false ? prep.map(p => `<li>${esc(p)}</li>`).join('') : '';
+  renderPrep();
+}
+
+// This request's preparation lines, with the doctor's own wording and any
+// change made for this patient.
+function currentPrep() {
+  return prepLines(draft.tests, data.profile.prepText || {}, draft.prepEdits, draft.prepExtra);
+}
+
+function renderPrep() {
+  $('#prep-box').hidden = draft.prep === false;
+  if (draft.prep === false) return;
+  const lines = currentPrep();
+  // a line typed in but left empty stays on screen so it can be filled in
+  const blanks = draft.prepExtra.map((t, i) => [t, i]).filter(([t]) => !t.trim()).map(([, i]) => ({ key: 'extra:' + i, text: '' }));
+  const rows = [...lines, ...blanks];
+  $('#prep-list').innerHTML = rows.length ? rows.map(l => `
+    <div class="prep-row" data-key="${esc(l.key)}">
+      <textarea class="field" rows="1" data-prep="1" placeholder="Bring your latest HbA1c result.">${esc(l.text)}</textarea>
+      <button class="x" data-del="1" title="Leave this line off this request" aria-label="Remove">×</button>
+    </div>`).join('') : '<p class="meta" style="margin:0">None of these tests needs preparation.</p>';
+  $$('#prep-list textarea').forEach(fitArea);
+}
+
+function fitArea(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
+
+function setPrep(key, text) {
+  if (key.startsWith('extra:')) draft.prepExtra[+key.slice(6)] = text;
+  else draft.prepEdits[key] = text;
 }
 
 function renderSig() {
@@ -366,6 +414,7 @@ function rxFromDraft(no) {
     followUp: draft.followUp, validUntil: draft.validDays ? addDays(draft.date, +draft.validDays) : '',
     signed: draft.sign !== false && !!sig, no,
     tests: draft.tests, impression: draft.impression, reqNotes: draft.reqNotes, prep: draft.prep,
+    prepLines: currentPrep().map(l => l.text),
   };
 }
 
@@ -404,7 +453,7 @@ function check() {
   const noSide = draft.tests.find(t => t.needSide && !t.side);
   if (noSide) out.push(`Pick a side for the ${modName(noSide.mod)} of the ${noSide.name.toLowerCase()}.`);
   if (draft.sign !== false && !currentSig()) out.push('Sign first, or untick Sign this prescription.');
-  const printed = [draft.patient.name, draft.patient.address, draft.notes, ...cards.flatMap(([m]) => [m.generic, m.brand, m.strength, m.form, m.sig]), draft.impression, draft.reqNotes, ...draft.tests.map(requestLine)].join(' ');
+  const printed = [draft.patient.name, draft.patient.address, draft.notes, ...cards.flatMap(([m]) => [m.generic, m.brand, m.strength, m.form, m.sig]), draft.impression, draft.reqNotes, ...draft.tests.map(requestLine), ...(draft.prep !== false ? currentPrep().map(l => l.text) : [])].join(' ');
   if (clean(printed, 'reg').split('?').length !== printed.split('?').length) out.push('Some letters print as ? since the pad prints in Latin letters only. Retype them in English letters.');
   return out;
 }
@@ -433,6 +482,8 @@ async function finish() {
       validUntil: draft.validDays ? addDays(draft.date, +draft.validDays) : '',
       tests: draft.tests.map(t => ({ ...t, views: [...(t.views || [])] })),
       impression: draft.impression, reqNotes: draft.reqNotes, prep: draft.prep,
+      prepLines: currentPrep().map(l => l.text),
+      prepEdits: { ...draft.prepEdits }, prepExtra: [...draft.prepExtra],
       signed, sigId: signed ? sig.id : null, logoKey,
       profile: { ...data.profile, logo: undefined },
       sent: [],
@@ -746,7 +797,7 @@ async function openEntry(h) {
   $('#h-download', m).onclick = () => { download(blob, h.file); h.sent.push({ how: 'download', at: Date.now() }); save(); };
   $('#h-print', m).onclick = () => { printPdf(blob); h.sent.push({ how: 'print', at: Date.now() }); save(); };
   $('#h-copy', m).onclick = () => {
-    draft = { ...blankDraft(), patient: { ...h.patient }, items: h.items.length ? h.items.map(x => ({ ...x, id: uid('m') })) : [blankMed()], notes: h.notes, tests: (h.tests || []).map(t => ({ ...t, id: uid('t'), views: [...(t.views || [])] })), impression: h.impression || '', reqNotes: h.reqNotes || '', prep: h.prep !== false };
+    draft = { ...blankDraft(), patient: { ...h.patient }, items: h.items.length ? h.items.map(x => ({ ...x, id: uid('m') })) : [blankMed()], notes: h.notes, tests: (h.tests || []).map(t => ({ ...t, id: uid('t'), views: [...(t.views || [])] })), impression: h.impression || '', reqNotes: h.reqNotes || '', prep: h.prep !== false, prepEdits: { ...(h.prepEdits || {}) }, prepExtra: [...(h.prepExtra || [])] };
     closeModal(); show('write'); changed();
     toast('Copied with today\'s date and a new Rx number.');
   };
@@ -785,6 +836,23 @@ function bindProfile() {
       toast(`PDFs will be saved in ${h.name}.`);
     } catch { /* closed the picker */ }
   };
+  $('#prep-edit').addEventListener('input', e => {
+    if (e.target.tagName !== 'TEXTAREA') return;
+    const row = e.target.closest('.prep-def');
+    data.profile.prepText = { ...(data.profile.prepText || {}), [row.dataset.key]: e.target.value.trim() };
+    fitArea(e.target);
+    save();
+    if (!row.querySelector('[data-reset]')) row.querySelector('.row-between').insertAdjacentHTML('beforeend', '<button class="btn-ghost sm" data-reset="1">Original wording</button>');
+  });
+  $('#prep-edit').addEventListener('click', e => {
+    if (!e.target.dataset.reset) return;
+    const key = e.target.closest('.prep-def').dataset.key;
+    const own = { ...(data.profile.prepText || {}) };
+    delete own[key];
+    data.profile.prepText = own;
+    save();
+    renderPrepEdit();
+  });
   $('#folder-forget').onclick = async () => { await forgetFolder(); renderFolder(); };
   $('#logo-file').onchange = async e => {
     const f = e.target.files[0];
@@ -828,6 +896,7 @@ function fillProfile() {
   $('#counter').value = Math.max(data.counter, highestUsed() + 1);
   $$('.swatch').forEach(s => s.classList.toggle('on', s.dataset.c === (data.profile.accent || '#101C2B')));
   renderFolder();
+  renderPrepEdit();
   renderLogo();
   renderSigLib();
 }
@@ -842,6 +911,20 @@ async function renderFolder() {
     : 'Choose a folder on this computer and every finished PDF is saved there, with a backup of all the data beside it.';
   $('#folder-pick').textContent = h ? 'Choose another folder' : 'Choose folder';
   $('#folder-forget').hidden = !h;
+}
+
+// The usual wording of each preparation line. A line cleared here stops
+// printing on every request.
+function renderPrepEdit() {
+  const own = data.profile.prepText || {};
+  $('#prep-edit').innerHTML = Object.keys(PREP).map(k => {
+    const changedFrom = k in own && own[k] !== PREP[k];
+    return `<div class="prep-def" data-key="${k}">
+      <div class="row-between"><span class="ol">${esc(PREP_LABELS[k] || k)}</span>${changedFrom ? '<button class="btn-ghost sm" data-reset="1">Original wording</button>' : ''}</div>
+      <textarea class="field" rows="1" placeholder="Not printed">${esc(k in own ? own[k] : PREP[k])}</textarea>
+    </div>`;
+  }).join('');
+  $$('#prep-edit textarea').forEach(fitArea);
 }
 
 function renderLogo() {

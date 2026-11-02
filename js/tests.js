@@ -371,7 +371,7 @@ export const DX = [
 export const PREP = {
   fast8: 'Blood test: fast for 8 to 10 hours before the blood is taken. Water is allowed.',
   fast10: 'Blood test: fast for 10 to 12 hours before the blood is taken. Water is allowed.',
-  urine: 'Urine: collect the first morning urine, midstream, in a sterile container.',
+  urine: 'Urine: give a midstream sample in a sterile container at the laboratory.',
   urine24: '24-hour urine: discard the first morning urine, then collect all urine for 24 hours up to and including the next first morning urine. Keep it cool.',
   stool: 'Stool: collect a fresh sample in a clean container and bring it within 2 hours.',
   usfast: 'Ultrasound: no food for 6 to 8 hours before the scan. Water is allowed.',
@@ -385,6 +385,24 @@ export const PREP = {
   colon: 'Colonoscopy: ask the endoscopy unit for the bowel preparation before the day.',
 };
 const PREP_ORDER = Object.keys(PREP);
+
+// What each line is for, shown beside it under Doctor and clinic.
+export const PREP_LABELS = {
+  fast8: 'Blood test, 8 to 10 hours fasting (FBS, OGTT, fasting insulin)',
+  fast10: 'Blood test, 10 to 12 hours fasting (lipid profile, cholesterol, triglycerides)',
+  urine: 'Urine (urinalysis, urine culture, urine pregnancy test)',
+  urine24: '24-hour urine (creatinine clearance, urine protein)',
+  stool: 'Stool (fecalysis, FOBT, stool culture, H. pylori antigen)',
+  usfast: 'Ultrasound, fasting (whole and upper abdomen, HBT, renal Doppler, MRCP)',
+  bladder: 'Ultrasound, full bladder (KUB, pelvic transabdominal, first trimester)',
+  transvaginal: 'Transvaginal ultrasound',
+  contrast: 'CT or MRI with contrast',
+  mri: 'MRI',
+  mammo: 'Mammography',
+  treadmill: 'Treadmill stress test',
+  egd: 'Upper GI endoscopy',
+  colon: 'Colonoscopy',
+};
 const SUPERSEDES = { fast10: 'fast8' };
 
 // Ready-made sets. Names must match the catalog; tests marked sex 'F' are
@@ -457,7 +475,7 @@ export function groupOrder(t) {
   return 200 + (i < 0 ? 99 : i);
 }
 
-export function prepFor(tests) {
+export function prepKeys(tests) {
   const keys = new Set();
   for (const t of tests) {
     if (t.p) keys.add(t.p);
@@ -472,7 +490,25 @@ export function prepFor(tests) {
     }
   }
   for (const [later, earlier] of Object.entries(SUPERSEDES)) if (keys.has(later)) keys.delete(earlier);
-  return PREP_ORDER.filter(k => keys.has(k)).map(k => PREP[k]);
+  return PREP_ORDER.filter(k => keys.has(k));
+}
+
+// The preparation lines one request prints, as { key, text }.
+//   wording: the doctor's own default for a line ('' stops it printing)
+//   edits:   changes made on this request only ('' removes the line)
+//   extra:   lines typed in for this request
+export function prepLines(tests, wording = {}, edits = {}, extra = []) {
+  const out = [];
+  for (const k of prepKeys(tests)) {
+    const text = (k in edits ? edits[k] : (k in wording ? wording[k] : PREP[k])) || '';
+    if (text.trim()) out.push({ key: k, text: text.trim() });
+  }
+  extra.forEach((t, i) => { if (t && t.trim()) out.push({ key: 'extra:' + i, text: t.trim() }); });
+  return out;
+}
+
+export function prepFor(tests, wording = {}) {
+  return prepLines(tests, wording).map(l => l.text);
 }
 
 export const CONTRAST = ['Plain', 'With contrast', 'Plain and with contrast'];

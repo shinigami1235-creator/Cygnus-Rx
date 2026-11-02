@@ -307,7 +307,7 @@ function build(rx, profile, images, scale) {
         y += lh;
       });
     }
-    const prep = rx.prep === false ? [] : prepFor(tests);
+    const prep = rx.prep === false ? [] : (rx.prepLines || prepFor(tests, profile.prepText || {}));
     if (prep.length) {
       y += 8 * kb;
       room(sl * 2);

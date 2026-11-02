@@ -64,7 +64,10 @@
           <label class="f">Notes to the laboratory or imaging center<input id="req-notes" placeholder="Send the results to the clinic email"></label>
         </div>
         <label class="check" style="margin-top:12px"><input type="checkbox" id="req-prep"> Print patient preparation</label>
-        <ul class="prep-list" id="prep-list"></ul>
+        <div id="prep-box">
+          <div class="prep-rows" id="prep-list"></div>
+          <div class="prep-foot"><button class="btn-ghost sm" id="prep-add">+ Add a line</button><span class="meta">Changes here are for this patient. The usual wording is under Doctor and clinic.</span></div>
+        </div>
       </div>
     </div>
 
@@ -167,6 +170,11 @@
       </div>
       <div class="f">Accent colour<div class="swatches" id="swatches"></div></div>
       <label class="check"><input type="checkbox" data-p="showRxNo"> Print the Rx number</label>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Patient preparation</h2></div>
+      <p class="meta" style="margin-top:-6px">Each line prints when a request has a test that needs it. Clear a line to stop printing it.</p>
+      <div class="prep-edit" id="prep-edit"></div>
     </div>
     <div class="card">
       <h2>Saved signatures</h2>
