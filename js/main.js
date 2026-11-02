@@ -1080,5 +1080,14 @@ boot();
 // The installed app keeps its files for offline use. Left off on plain http,
 // which is only ever a copy being built and tested.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // The app opens from its offline copy, so a new version arrives a few
+  // seconds after the window does. Say so, since the old one is on screen.
+  const hadOne = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadOne) return;
+    const b = $('#bar-status');
+    b.innerHTML = 'A new version of Cygnus Rx is ready. <button class="btn-gold sm" id="update">Reload</button>';
+    $('#update').onclick = () => location.reload();
+  });
+  navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
 }
