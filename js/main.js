@@ -12,6 +12,10 @@ import { fmtDate, todayISO, addDays, uid, esc, slug, ageText } from './util.js';
 import { openPicker } from './picker.js';
 import { requestLine, groupOf, prepLines, modName, PREP, PREP_LABELS } from './tests.js';
 import { sortTests } from './layout.js';
+import { infoFor } from './druginfo.js';
+import { warnings, childDose, ageMonths } from './safety.js';
+import { openAbout, openFinder } from './reference.js';
+import { CERT_TYPES, blankCert, certText } from './cert.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -25,7 +29,7 @@ function blankMed() {
   return { id: uid('m'), generic: '', brand: '', strength: '', form: '', qty: '', qtyUnit: '', route: 'oral', dose: '', area: '', freq: '', timing: '', duration: '', sig: '', sigEdited: false };
 }
 function blankDraft() {
-  return { patient: { name: '', sex: '', birthdate: '', age: '', weight: '', address: '' }, date: todayISO(), items: [blankMed()], notes: '', followUp: '', validDays: '', sign: true, tests: [], impression: '', reqNotes: '', prep: true, prepEdits: {}, prepExtra: [] };
+  return { patient: { name: '', sex: '', birthdate: '', age: '', weight: '', address: '', allergies: '', regular: '', pregnant: false, breastfeeding: false }, date: todayISO(), items: [blankMed()], notes: '', followUp: '', validDays: '', sign: true, tests: [], impression: '', reqNotes: '', prep: true, prepEdits: {}, prepExtra: [], cert: null };
 }
 let draft;
 
@@ -66,7 +70,7 @@ function show(view) {
 }
 
 // ── write view ─────────────────────────────────────────────────
-const P_FIELDS = ['name', 'sex', 'birthdate', 'age', 'weight', 'address'];
+const P_FIELDS = ['name', 'sex', 'birthdate', 'age', 'weight', 'address', 'allergies', 'regular'];
 
 function bindWrite() {
   for (const k of P_FIELDS) {
@@ -74,9 +78,21 @@ function bindWrite() {
       draft.patient[k] = e.target.value;
       if (k === 'name') matchPatient();
       if (k === 'birthdate' && e.target.value) { draft.patient.age = ''; $('#p-age').value = ''; }
+      if (k === 'sex') showFlags();
       changed();
     });
   }
+  for (const k of ['pregnant', 'breastfeeding']) $('#p-' + k).onchange = e => { draft.patient[k] = e.target.checked; changed(); };
+  $('#find-med').onclick = () => openFinder(addMedicine);
+  $('#cert-add').onclick = () => { draft.cert = blankCert(); renderCert(); changed(); $('#cert-body [data-c=diagnosis]').focus(); };
+  $('#cert-remove').onclick = () => { draft.cert = null; renderCert(); changed(); };
+  $('#cert-type').onchange = e => { draft.cert.type = e.target.value; renderCert(); changed(); };
+  $('#cert-body').addEventListener('input', e => {
+    const k = e.target.dataset.c;
+    if (k) { draft.cert[k] = e.target.value; changed(); return; }
+    if (e.target.id === 'cert-text') { draft.cert.text = e.target.value; draft.cert.edited = true; $('#cert-rebuild').hidden = false; changed(); }
+  });
+  $('#cert-rebuild').onclick = () => { draft.cert.edited = false; $('#cert-rebuild').hidden = true; changed(); };
   $('#rx-date').oninput = e => { draft.date = e.target.value || todayISO(); changed(); };
   $('#rx-notes').oninput = e => { draft.notes = e.target.value; changed(); };
   $('#rx-follow').oninput = e => { draft.followUp = e.target.value; changed(); };
@@ -164,6 +180,10 @@ function fillWrite() {
   $('#rx-follow').value = draft.followUp || '';
   $('#rx-valid').value = draft.validDays || '';
   $('#rx-sign').checked = draft.sign !== false;
+  $('#p-pregnant').checked = !!draft.patient.pregnant;
+  $('#p-breastfeeding').checked = !!draft.patient.breastfeeding;
+  showFlags();
+  renderCert();
   $('#patient-list').innerHTML = data.patients.map(p => `<option value="${esc(p.name)}">${esc([p.sex, ageText(p), p.address].filter(Boolean).join(', '))}</option>`).join('');
   genericOptions();
   renderMeds();
@@ -186,7 +206,7 @@ function matchPatient(fill = true) {
   const visits = data.history.filter(h => h.patientId === known.id).length;
   note.textContent = `Returning patient, ${visits} prescription${visits === 1 ? '' : 's'} on file.`;
   if (!fill) return;
-  for (const k of ['sex', 'birthdate', 'age', 'address', 'weight']) {
+  for (const k of ['sex', 'birthdate', 'age', 'address', 'weight', 'allergies', 'regular']) {
     if (!draft.patient[k] && known[k]) { draft.patient[k] = known[k]; $('#p-' + k).value = known[k]; }
   }
 }
@@ -202,11 +222,13 @@ function medCard(m, i) {
       <span class="med-no">${i + 1}.</span>
       <span class="med-title">${esc(medTitle(m)) || 'New medicine'}</span>
       <div class="med-acts">
+        ${infoFor(m.generic, m.route) ? '<button data-act="about">About</button>' : ''}
         ${i > 0 ? '<button data-act="up" title="Move up">Move up</button>' : ''}
         <button data-act="fav">Add to favourites</button>
         <button data-act="del" class="del">Remove</button>
       </div>
     </div>
+    <div class="med-warn"></div>
     <div class="grid g-med1">
       <label class="f">Generic name <input data-k="generic" list="generic-list" value="${esc(m.generic)}" placeholder="Tretinoin" autocomplete="off"></label>
       <label class="f">Strength<input data-k="strength" list="str-${m.id}" value="${esc(m.strength)}" placeholder="0.025%"><datalist id="str-${m.id}">${strengths.map(s => `<option value="${esc(s)}">`).join('')}</datalist></label>
@@ -229,6 +251,7 @@ function medCard(m, i) {
       <label class="f">How long<input data-k="duration" list="dur-list" value="${esc(m.duration)}" placeholder="for 7 days"></label>
       ${r === 'topical' ? `<label class="f">When<input data-k="timing" list="timing-list" value="${esc(m.timing)}" placeholder=""></label>` : '<div></div>'}
     </div>
+    <div class="med-kid"></div>
     <div class="sig-out f">
       <span class="lab">Sig, as printed ${m.sigEdited ? '<button data-act="rebuild">Write it again from the boxes above</button>' : ''}</span>
       <textarea data-k="sig" rows="2" placeholder="Take 1 tablet by mouth three times a day after meals for 7 days.">${esc(m.sig)}</textarea>
@@ -239,6 +262,7 @@ function medCard(m, i) {
 function renderMeds() {
   const box = $('#meds');
   box.innerHTML = draft.items.map(medCard).join('');
+  renderSafety();
   box.oninput = e => {
     let card = e.target.closest('.med');
     const k = e.target.dataset.k;
@@ -259,6 +283,7 @@ function renderMeds() {
       card.querySelector('[data-k=sig]').value = m.sig;
     }
     card.querySelector('.med-title').textContent = medTitle(m) || 'New medicine';
+    if (k === 'generic' && !!infoFor(m.generic, m.route) !== !!card.querySelector('[data-act=about]')) rerenderCard(card, m);
     changed();
   };
   box.onchange = e => {
@@ -283,6 +308,14 @@ function renderMeds() {
     } else if (act === 'up') {
       [draft.items[i - 1], draft.items[i]] = [draft.items[i], draft.items[i - 1]];
       renderMeds();
+    } else if (act === 'about') {
+      openAbout(m.generic, m.route);
+      return;
+    } else if (act === 'kid') {
+      const d = childDose(m, draft.patient.weight, ageMonths(draft.patient, draft.date));
+      if (!d?.dose) return;
+      m.dose = d.dose; m.freq = d.freq; m.sigEdited = false; m.sig = buildSig(m);
+      rerenderCard(card, m);
     } else if (act === 'rebuild') {
       m.sigEdited = false;
       m.sig = buildSig(m);
@@ -299,12 +332,80 @@ function renderMeds() {
   };
 }
 
+// Warnings and the child dose under each medicine. Redrawn on every change,
+// since a change to the patient or another medicine can alter them.
+function renderSafety() {
+  const all = warnings(draft, data.profile);
+  const months = ageMonths(draft.patient, draft.date);
+  $$('#meds .med').forEach(card => {
+    const i = +card.dataset.i;
+    const m = draft.items[i];
+    if (!m) return;
+    const w = all[i] || [];
+    const box = card.querySelector('.med-warn');
+    const html = w.map(x => `<p class="warn-line ${x.lvl}">${esc(x.text)}</p>`).join('');
+    if (box.innerHTML !== html) box.innerHTML = html;
+    card.classList.toggle('has-avoid', w.some(x => x.lvl === 'avoid'));
+    const d = childDose(m, draft.patient.weight, months);
+    const kid = card.querySelector('.med-kid');
+    const kh = d ? `<p><b>Child dose.</b> ${esc(d.text)}${d.dose && d.dose !== m.dose ? ` <button data-act="kid">Use ${esc(d.dose)} ${esc(d.freq)}</button>` : ''}</p>` : '';
+    if (kid.innerHTML !== kh) kid.innerHTML = kh;
+  });
+}
+
+// A medicine picked from Find by condition. It fills the form and strength
+// when the starter list sells it in one form only.
+function addMedicine(key) {
+  const matches = DRUGS.filter(d => d.g.toLowerCase() === key);
+  const m = { ...blankMed(), generic: matches[0]?.g || key.replace(/^./, c => c.toUpperCase()) };
+  if (matches.length === 1) {
+    const d = matches[0];
+    Object.assign(m, { form: d.f, route: d.r, qtyUnit: d.u || '' });
+    if (d.s.length === 1 && d.s[0]) { m.strength = d.s[0]; m.autoStrength = true; }
+  } else if (matches.length && new Set(matches.map(d => d.r)).size === 1) m.route = matches[0].r;
+  if (draft.items.length === 1 && !medTitle(draft.items[0]) && !draft.items[0].sig) draft.items = [];
+  draft.items.push(m);
+  renderMeds();
+  changed();
+  $$('#meds .med').at(-1)?.querySelector(m.form ? '[data-k=strength]' : '[data-k=form]').focus();
+  toast(medTitle(m) + ' added.');
+}
+
+function showFlags() {
+  $('#p-flags').hidden = draft.patient.sex === 'M';
+  if (draft.patient.sex === 'M') { draft.patient.pregnant = false; draft.patient.breastfeeding = false; }
+}
+
+function renderCert() {
+  const c = draft.cert;
+  $('#cert-body').hidden = !c;
+  $('#cert-add').hidden = !!c;
+  $('#cert-remove').hidden = !c;
+  if (!c) return;
+  $('#cert-type').value = c.type;
+  $$('#cert-body [data-c]').forEach(el => { el.value = c[el.dataset.c] || ''; });
+  $$('#cert-body .c-med, #cert-body .c-fit, #cert-body .c-clear').forEach(el => { el.hidden = !el.classList.contains('c-' + c.type); });
+  $('#c-from-label').textContent = c.type === 'fit' ? 'Off work from' : 'Rest from';
+  $('#c-rem-label').textContent = c.type === 'med' ? 'Recommendation' : 'Remarks';
+  $('#cert-rebuild').hidden = !c.edited;
+  syncCertText();
+}
+
+function syncCertText() {
+  const c = draft.cert;
+  if (!c || c.edited) return;
+  c.text = certText(c, draft.patient, draft.date);
+  const t = $('#cert-text');
+  if (t && document.activeElement !== t) t.value = c.text;
+}
+
 function rerenderCard(card, m) {
   const i = +card.dataset.i;
   const tmp = document.createElement('div');
   tmp.innerHTML = medCard(m, i);
   const focusK = document.activeElement?.dataset?.k;
   card.replaceWith(tmp.firstElementChild);
+  renderSafety();
   if (focusK) $(`#meds .med[data-i="${i}"] [data-k="${focusK}"]`)?.focus();
 }
 
@@ -388,6 +489,8 @@ function renderSig() {
 }
 
 function changed() {
+  syncCertText();
+  renderSafety();
   data.draft = draft;
   save();
   refresh();
@@ -415,6 +518,7 @@ function rxFromDraft(no) {
     signed: draft.sign !== false && !!sig, no,
     tests: draft.tests, impression: draft.impression, reqNotes: draft.reqNotes, prep: draft.prep,
     prepLines: currentPrep().map(l => l.text),
+    cert: draft.cert && draft.cert.text.trim() ? { type: draft.cert.type, text: draft.cert.text } : null,
   };
 }
 
@@ -434,7 +538,8 @@ async function drawPreview() {
   $('#rx-no-preview').textContent = data.profile.showRxNo !== false ? peekNumber() : '';
   const problems = check();
   const msg = $('#finish-msg');
-  msg.textContent = problems[0] || 'Finish and send saves the PDF, then shows the ways to send it.';
+  const warned = draft.items.findIndex((m, i) => $(`#meds .med[data-i="${i}"]`)?.classList.contains('has-avoid'));
+  msg.textContent = problems[0] || (warned >= 0 ? `Medicine ${warned + 1} has a red warning. Read it before you finish.` : 'Finish and send saves the PDF, then shows the ways to send it.');
   msg.classList.toggle('warn', problems.length > 0 && triedFinish);
   const mm = $('#m-msg');
   mm.textContent = problems[0] || '';
@@ -447,13 +552,15 @@ function check() {
   if (!draft.patient.name.trim()) out.push('Type the patient\'s name.');
   if (lastOverflow.length) out.push(`The ${lastOverflow[0].toLowerCase()} is too long for its line. Shorten it.`);
   const cards = draft.items.map((m, i) => [m, i + 1]).filter(([m]) => hasContent(m));
-  if (!cards.length && !draft.tests.length) out.push('Add a medicine or a test.');
+  if (!cards.length && !draft.tests.length && !draft.cert) out.push('Add a medicine, a test or a certificate.');
+  if (draft.cert?.type === 'clear' && !draft.cert.activity.trim() && !draft.cert.edited) out.push('Type what the patient is cleared for.');
+  if (draft.cert && !draft.cert.text.trim()) out.push('The certificate has no wording. Write it again from the boxes.');
   for (const [m, n] of cards) if (!m.generic.trim()) { out.push(`Medicine ${n} needs its generic name.`); break; }
   for (const [m, n] of cards) if (!m.sig.trim()) { out.push(`Medicine ${n} needs a sig.`); break; }
   const noSide = draft.tests.find(t => t.needSide && !t.side);
   if (noSide) out.push(`Pick a side for the ${modName(noSide.mod)} of the ${noSide.name.toLowerCase()}.`);
   if (draft.sign !== false && !currentSig()) out.push('Sign first, or untick Sign this prescription.');
-  const printed = [draft.patient.name, draft.patient.address, draft.notes, ...cards.flatMap(([m]) => [m.generic, m.brand, m.strength, m.form, m.sig]), draft.impression, draft.reqNotes, ...draft.tests.map(requestLine), ...(draft.prep !== false ? currentPrep().map(l => l.text) : [])].join(' ');
+  const printed = [draft.patient.name, draft.patient.address, draft.notes, ...cards.flatMap(([m]) => [m.generic, m.brand, m.strength, m.form, m.sig]), draft.impression, draft.reqNotes, ...draft.tests.map(requestLine), ...(draft.prep !== false ? currentPrep().map(l => l.text) : []), draft.cert?.text || ''].join(' ');
   if (clean(printed, 'reg').split('?').length !== printed.split('?').length) out.push('Some letters print as ? since the pad prints in Latin letters only. Retype them in English letters.');
   return out;
 }
@@ -484,6 +591,7 @@ async function finish() {
       impression: draft.impression, reqNotes: draft.reqNotes, prep: draft.prep,
       prepLines: currentPrep().map(l => l.text),
       prepEdits: { ...draft.prepEdits }, prepExtra: [...draft.prepExtra],
+      cert: draft.cert && draft.cert.text.trim() ? { ...draft.cert } : null,
       signed, sigId: signed ? sig.id : null, logoKey,
       profile: { ...data.profile, logo: undefined },
       sent: [],
@@ -538,7 +646,7 @@ function upsertPatient(p) {
   const name = p.name.trim();
   let rec = data.patients.find(x => x.name.trim().toLowerCase() === name.toLowerCase());
   if (!rec) { rec = { id: uid('p') }; data.patients.push(rec); }
-  Object.assign(rec, { name, sex: p.sex, birthdate: p.birthdate, age: p.age, weight: p.weight, address: p.address, last: Date.now() });
+  Object.assign(rec, { name, sex: p.sex, birthdate: p.birthdate, age: p.age, weight: p.weight, address: p.address, allergies: p.allergies || '', regular: p.regular || '', last: Date.now() });
   data.patients.sort((a, b) => a.name.localeCompare(b.name));
   return rec.id;
 }
@@ -556,9 +664,12 @@ async function pdfFor(entry) {
 function docName(e) {
   const meds = (e.items || []).some(hasContent);
   const tests = (e.tests || []).length;
-  if (meds && tests) return 'Prescription and request';
-  if (tests) return (e.tests.every(t => t.kind === 'lab') ? 'Laboratory' : e.tests.some(t => t.kind === 'lab') ? 'Laboratory and diagnostic' : 'Diagnostic') + ' request';
-  return 'Prescription';
+  const cert = e.cert ? CERT_TYPES[e.cert.type].label : '';
+  const names = [];
+  if (meds) names.push('Prescription');
+  if (tests) names.push(meds ? 'request' : (e.tests.every(t => t.kind === 'lab') ? 'Laboratory' : e.tests.some(t => t.kind === 'lab') ? 'Laboratory and diagnostic' : 'Diagnostic') + ' request');
+  if (cert) names.push(names.length ? cert.toLowerCase() : cert);
+  return names.length > 2 ? names[0] + ', ' + names[1] + ' and ' + names[2] : names.join(' and ') || 'Prescription';
 }
 
 function stamp(ms) {
@@ -760,7 +871,7 @@ function renderHistory() {
   $('#h-table tbody').innerHTML = rows.map(h => `
     <tr data-id="${h.id}" style="cursor:pointer">
       <td>${fmtDate(h.date)}</td><td class="no">${esc(h.no)}</td><td><b>${esc(h.patient.name)}</b></td>
-      <td class="meds-cell">${esc([...h.items.map(medTitle), ...(h.tests || []).map(t => t.kind === 'img' ? modName(t.mod) + ' ' + t.name.toLowerCase() : t.name)].join(', '))}</td>
+      <td class="meds-cell">${esc([...h.items.map(medTitle), ...(h.tests || []).map(t => t.kind === 'img' ? modName(t.mod) + ' ' + t.name.toLowerCase() : t.name), ...(h.cert ? [CERT_TYPES[h.cert.type].label] : [])].join(', '))}</td>
       <td class="meta">${[...new Set(h.sent.map(s => SENT_WORD[s.how]))].join(', ') || 'not yet'}</td>
       <td><button class="btn-ghost sm">Open</button></td>
     </tr>`).join('');
@@ -797,7 +908,7 @@ async function openEntry(h) {
   $('#h-download', m).onclick = () => { download(blob, h.file); h.sent.push({ how: 'download', at: Date.now() }); save(); };
   $('#h-print', m).onclick = () => { printPdf(blob); h.sent.push({ how: 'print', at: Date.now() }); save(); };
   $('#h-copy', m).onclick = () => {
-    draft = { ...blankDraft(), patient: { ...h.patient }, items: h.items.length ? h.items.map(x => ({ ...x, id: uid('m') })) : [blankMed()], notes: h.notes, tests: (h.tests || []).map(t => ({ ...t, id: uid('t'), views: [...(t.views || [])] })), impression: h.impression || '', reqNotes: h.reqNotes || '', prep: h.prep !== false, prepEdits: { ...(h.prepEdits || {}) }, prepExtra: [...(h.prepExtra || [])] };
+    draft = { ...blankDraft(), patient: { ...h.patient }, items: h.items.length ? h.items.map(x => ({ ...x, id: uid('m') })) : [blankMed()], notes: h.notes, tests: (h.tests || []).map(t => ({ ...t, id: uid('t'), views: [...(t.views || [])] })), impression: h.impression || '', reqNotes: h.reqNotes || '', prep: h.prep !== false, prepEdits: { ...(h.prepEdits || {}) }, prepExtra: [...(h.prepExtra || [])], cert: h.cert ? { ...blankCert(h.cert.type), ...h.cert } : null };
     closeModal(); show('write'); changed();
     toast('Copied with today\'s date and a new Rx number.');
   };

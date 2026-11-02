@@ -40,14 +40,21 @@
         <label class="f">Weight, kg<input id="p-weight" inputmode="decimal" placeholder="For children"></label>
         <label class="f span2">Address<input id="p-address" placeholder="Barangay, city"></label>
         <label class="f">Date<input id="rx-date" type="date"></label>
+        <label class="f span2">Allergies<input id="p-allergies" placeholder="Penicillin, hives"></label>
+        <label class="f span2">Takes regularly<input id="p-regular" placeholder="Losartan 50 mg, metformin"></label>
+      </div>
+      <div class="p-flags" id="p-flags">
+        <label class="check"><input type="checkbox" id="p-pregnant"> Pregnant</label>
+        <label class="check"><input type="checkbox" id="p-breastfeeding"> Breastfeeding</label>
       </div>
       <datalist id="patient-list"></datalist>
+      <p class="meta">Allergies, regular medicines and pregnancy are checked against the medicines below. They do not print.</p>
       <p class="meta" id="p-known"></p>
     </div>
 
     <div class="card">
       <div class="card-head"><h2>Medicines</h2>
-        <div class="head-acts"><button class="btn-ghost sm" id="add-saved">Add from favourites</button><button class="btn-ghost sm" id="save-set">Save list as a set</button></div>
+        <div class="head-acts"><button class="btn-ghost sm" id="find-med">Find by condition</button><button class="btn-ghost sm" id="add-saved">Add from favourites</button><button class="btn-ghost sm" id="save-set">Save list as a set</button></div>
       </div>
       <div id="meds"></div>
       <button class="btn-add" id="add-med">+ Add medicine</button>
@@ -68,6 +75,30 @@
           <div class="prep-rows" id="prep-list"></div>
           <div class="prep-foot"><button class="btn-ghost sm" id="prep-add">+ Add a line</button><span class="meta">Changes here are for this patient. The usual wording is under Doctor and clinic.</span></div>
         </div>
+      </div>
+    </div>
+
+    <div class="card" id="cert-card">
+      <div class="card-head"><h2>Certificate</h2>
+        <div class="head-acts"><button class="btn-ghost sm" id="cert-add">Add a certificate</button><button class="btn-ghost sm" id="cert-remove" hidden>Remove certificate</button></div>
+      </div>
+      <div id="cert-body" hidden>
+        <div class="grid g-2">
+          <label class="f">Type<select id="cert-type"><option value="med">Medical certificate</option><option value="fit">Fit to work</option><option value="clear">Medical clearance</option></select></label>
+          <label class="f">Requested for<input data-c="purpose" placeholder="work"></label>
+          <label class="f span2 c-med c-fit">Diagnosis<input data-c="diagnosis" placeholder="Acute gastroenteritis"></label>
+          <label class="f span2 c-clear">Cleared for<input data-c="activity" placeholder="minor surgery under local anaesthesia"></label>
+          <label class="f span2 c-clear">Findings<input data-c="findings" placeholder="BP 110/70, heart and lungs normal"></label>
+          <label class="f c-med c-fit"><span id="c-from-label">Rest from</span><input type="date" data-c="from"></label>
+          <label class="f c-med c-fit">To<input type="date" data-c="to"></label>
+          <label class="f c-fit">Back to work on<input type="date" data-c="back"></label>
+          <label class="f span2"><span id="c-rem-label">Recommendation</span><input data-c="remarks" placeholder="Soft diet and plenty of fluids"></label>
+        </div>
+        <div class="sig-out f">
+          <span class="lab">Wording, as printed <button id="cert-rebuild" hidden>Write it again from the boxes above</button></span>
+          <textarea id="cert-text" rows="7"></textarea>
+        </div>
+        <p class="meta">Prints on a page of its own, signed like the prescription.</p>
       </div>
     </div>
 

@@ -349,3 +349,49 @@ body.no-link .link-only{display:none}
 .prep-edit{display:flex;flex-direction:column;gap:var(--cs-3)}
 .prep-def .ol{width:auto}
 .prep-def .row-between{margin-bottom:4px}
+
+/* ── drug safety, info card and finder ───────────────────── */
+.med-warn:empty,.med-kid:empty{display:none}
+.med-warn{display:flex;flex-direction:column;gap:4px;margin:0 0 var(--cs-2)}
+.warn-line{margin:0;padding:6px 10px;border-radius:var(--cs-r-sm);font:400 13px/18px var(--cs-font);border-left:3px solid}
+.warn-line.avoid{background:var(--cs-danger-tint);border-color:var(--cs-danger);color:#5c1515}
+.warn-line.caution{background:var(--cs-warning-tint);border-color:var(--cs-warning);color:#4d3a08}
+.warn-line.info{background:var(--cs-primary-50);border-color:var(--cs-primary-400);color:var(--cs-primary-800)}
+.med.has-avoid{border-left-color:var(--cs-danger)}
+.med-kid{margin-top:var(--cs-3);padding:8px 10px;border-radius:var(--cs-r-sm);background:var(--cs-success-tint);font:400 13px/19px var(--cs-font);color:var(--cs-text)}
+.med-kid p{margin:0}
+.med-kid button{background:none;border:0;color:var(--cs-primary-600);font:600 13px/1 var(--cs-font);cursor:pointer;padding:2px 0;text-decoration:underline}
+.p-flags{display:flex;gap:var(--cs-5);margin-top:var(--cs-3)}
+.p-flags[hidden]{display:none}
+.about{width:620px;max-width:100%}
+.about h3{font:600 12px/16px var(--cs-font);text-transform:uppercase;letter-spacing:.05em;color:var(--cs-text-meta);margin:var(--cs-4) 0 var(--cs-1)}
+.about p,.about li{font:400 14px/20px var(--cs-font);margin:0}
+.about ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.about-cls{color:var(--cs-text-muted)}
+.about .source{margin-top:var(--cs-5)}
+.lvl{display:inline-block;font:600 11px/16px var(--cs-font);padding:0 6px;border-radius:var(--cs-r-pill);vertical-align:1px}
+.lvl.ok{background:var(--cs-success-tint);color:var(--cs-success)}
+.lvl.caution{background:var(--cs-warning-tint);color:#7a5a0c}
+.lvl.avoid{background:var(--cs-danger-tint);color:var(--cs-danger)}
+.tag-off{font:600 11px/16px var(--cs-font);background:var(--cs-brand-gold-wash);color:#5a4210;border-radius:var(--cs-r-pill);padding:0 6px}
+.cov-row{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.cov{font:600 11.5px/20px var(--cs-font);padding:0 8px;border-radius:var(--cs-r-pill);border:1px solid}
+.cov.c2{background:var(--cs-primary-600);border-color:var(--cs-primary-600);color:#fff}
+.cov.c1{background:var(--cs-primary-100);border-color:var(--cs-primary-400);color:var(--cs-primary-700)}
+.cov.c0{background:var(--cs-n-050);border-color:var(--cs-border);color:var(--cs-n-500);text-decoration:line-through}
+.finder{width:680px;max-width:100%}
+.find-sugg{display:flex;flex-wrap:wrap;gap:6px;margin:var(--cs-3) 0}
+.chip{border:1px solid var(--cs-border-strong);background:var(--cs-surface);border-radius:var(--cs-r-pill);padding:4px 10px;font:500 12.5px/16px var(--cs-font);cursor:pointer;color:var(--cs-text)}
+.chip:hover{border-color:var(--cs-primary-400);background:var(--cs-primary-50)}
+.find-list{display:flex;flex-direction:column;gap:var(--cs-2);max-height:56vh;overflow:auto}
+.find-row{display:flex;gap:var(--cs-3);align-items:flex-start;border:1px solid var(--cs-border);border-radius:var(--cs-r-md);padding:var(--cs-3)}
+.find-row .grow{flex:1;min-width:0}
+.find-row .meta{margin:0}
+.find-row .hit{margin:3px 0 0;font:400 13px/18px var(--cs-font);color:var(--cs-text-muted)}
+.find-acts{display:flex;gap:6px;flex:none}
+.m-foot>.meta{margin:0 auto 0 0;align-self:center}
+#cert-body [hidden]{display:none}
+@media (max-width:640px){
+  .find-row{flex-direction:column}
+  .p-flags{gap:var(--cs-4)}
+}

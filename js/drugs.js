@@ -38,47 +38,105 @@ export const DRUGS = [
   { g: 'Levocetirizine', f: 'tablet', s: ['5 mg'], r: 'oral', u: '' },
   { g: 'Loratadine', f: 'tablet', s: ['10 mg'], r: 'oral', u: '' },
   { g: 'Fexofenadine', f: 'tablet', s: ['120 mg', '180 mg'], r: 'oral', u: '' },
+  { g: 'Cetirizine', f: 'syrup', s: ['5 mg/5 mL'], r: 'oral', u: 'bottle' },
+  { g: 'Chlorphenamine', f: 'tablet', s: ['4 mg'], r: 'oral', u: '' },
+  { g: 'Hydroxyzine', f: 'tablet', s: ['10 mg', '25 mg'], r: 'oral', u: '' },
+  { g: 'Metronidazole', f: 'gel', s: ['0.75%', '1%'], r: 'topical', u: 'tube' },
+  { g: 'Ivermectin', f: 'cream', s: ['1%'], r: 'topical', u: 'tube' },
+  { g: 'Tacrolimus', f: 'ointment', s: ['0.03%', '0.1%'], r: 'topical', u: 'tube' },
+  { g: 'Clobetasol propionate', f: 'cream', s: ['0.05%'], r: 'topical', u: 'tube' },
+  { g: 'Betamethasone valerate', f: 'cream', s: ['0.1%'], r: 'topical', u: 'tube' },
+  { g: 'Clotrimazole', f: 'cream', s: ['1%'], r: 'topical', u: 'tube' },
+  { g: 'Clotrimazole', f: 'vaginal cream', s: ['1%', '2%'], r: 'vaginal', u: 'tube' },
+  { g: 'Permethrin', f: 'cream', s: ['5%'], r: 'topical', u: 'tube' },
+  { g: 'Spironolactone', f: 'tablet', s: ['25 mg', '50 mg', '100 mg'], r: 'oral', u: '' },
+  { g: 'Ethinylestradiol + Drospirenone', f: 'tablet', s: ['30 mcg/3 mg', '20 mcg/3 mg'], r: 'oral', u: 'pack' },
+  { g: 'Ethinylestradiol + Cyproterone acetate', f: 'tablet', s: ['35 mcg/2 mg'], r: 'oral', u: 'pack' },
   // pain and fever
   { g: 'Paracetamol', f: 'tablet', s: ['500 mg'], r: 'oral', u: '' },
   { g: 'Paracetamol', f: 'syrup', s: ['120 mg/5 mL', '250 mg/5 mL'], r: 'oral', u: 'bottle' },
+  { g: 'Paracetamol', f: 'drops', s: ['100 mg/mL'], r: 'oral', u: 'bottle' },
   { g: 'Ibuprofen', f: 'tablet', s: ['200 mg', '400 mg'], r: 'oral', u: '' },
+  { g: 'Ibuprofen', f: 'suspension', s: ['100 mg/5 mL', '200 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Mefenamic acid', f: 'capsule', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
   { g: 'Celecoxib', f: 'capsule', s: ['100 mg', '200 mg'], r: 'oral', u: '' },
   { g: 'Naproxen sodium', f: 'tablet', s: ['275 mg', '550 mg'], r: 'oral', u: '' },
+  { g: 'Tramadol', f: 'capsule', s: ['50 mg'], r: 'oral', u: '' },
+  { g: 'Colchicine', f: 'tablet', s: ['500 mcg'], r: 'oral', u: '' },
+  { g: 'Allopurinol', f: 'tablet', s: ['100 mg', '300 mg'], r: 'oral', u: '' },
   // antibiotics
   { g: 'Amoxicillin', f: 'capsule', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
+  { g: 'Amoxicillin', f: 'suspension', s: ['125 mg/5 mL', '250 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Co-amoxiclav', f: 'tablet', s: ['625 mg', '1 g'], r: 'oral', u: '' },
+  { g: 'Co-amoxiclav', f: 'suspension', s: ['125 mg/31.25 mg per 5 mL', '250 mg/62.5 mg per 5 mL', '200 mg/28.5 mg per 5 mL', '400 mg/57 mg per 5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Cefalexin', f: 'capsule', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
+  { g: 'Cefalexin', f: 'suspension', s: ['125 mg/5 mL', '250 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Cefuroxime', f: 'tablet', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
+  { g: 'Cefuroxime', f: 'suspension', s: ['125 mg/5 mL', '250 mg/5 mL'], r: 'oral', u: 'bottle' },
+  { g: 'Cefixime', f: 'capsule', s: ['200 mg', '400 mg'], r: 'oral', u: '' },
+  { g: 'Cefixime', f: 'suspension', s: ['100 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Azithromycin', f: 'tablet', s: ['500 mg'], r: 'oral', u: '' },
+  { g: 'Azithromycin', f: 'suspension', s: ['200 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Clarithromycin', f: 'tablet', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
+  { g: 'Clarithromycin', f: 'suspension', s: ['125 mg/5 mL', '250 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Ciprofloxacin', f: 'tablet', s: ['250 mg', '500 mg'], r: 'oral', u: '' },
+  { g: 'Levofloxacin', f: 'tablet', s: ['500 mg', '750 mg'], r: 'oral', u: '' },
+  { g: 'Co-trimoxazole', f: 'tablet', s: ['400 mg/80 mg', '800 mg/160 mg'], r: 'oral', u: '' },
+  { g: 'Co-trimoxazole', f: 'suspension', s: ['200 mg/40 mg per 5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Metronidazole', f: 'tablet', s: ['500 mg'], r: 'oral', u: '' },
+  { g: 'Metronidazole', f: 'suspension', s: ['125 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Nitrofurantoin', f: 'capsule', s: ['100 mg'], r: 'oral', u: '' },
+  // antivirals, antifungals, worms
+  { g: 'Oseltamivir', f: 'capsule', s: ['75 mg'], r: 'oral', u: '' },
+  { g: 'Oseltamivir', f: 'suspension', s: ['6 mg/mL'], r: 'oral', u: 'bottle' },
+  { g: 'Fluconazole', f: 'capsule', s: ['50 mg', '150 mg', '200 mg'], r: 'oral', u: '' },
+  { g: 'Albendazole', f: 'tablet', s: ['400 mg'], r: 'oral', u: '' },
+  { g: 'Albendazole', f: 'suspension', s: ['200 mg/5 mL'], r: 'oral', u: 'bottle' },
+  { g: 'Mebendazole', f: 'tablet', s: ['100 mg', '500 mg'], r: 'oral', u: '' },
   // stomach
   { g: 'Omeprazole', f: 'capsule', s: ['20 mg', '40 mg'], r: 'oral', u: '' },
   { g: 'Esomeprazole', f: 'tablet', s: ['20 mg', '40 mg'], r: 'oral', u: '' },
   { g: 'Famotidine', f: 'tablet', s: ['20 mg', '40 mg'], r: 'oral', u: '' },
   { g: 'Domperidone', f: 'tablet', s: ['10 mg'], r: 'oral', u: '' },
+  { g: 'Domperidone', f: 'suspension', s: ['5 mg/5 mL'], r: 'oral', u: 'bottle' },
   { g: 'Ondansetron', f: 'tablet', s: ['4 mg', '8 mg'], r: 'oral', u: '' },
+  { g: 'Ondansetron', f: 'syrup', s: ['4 mg/5 mL'], r: 'oral', u: 'bottle' },
+  { g: 'Hyoscine butylbromide', f: 'tablet', s: ['10 mg'], r: 'oral', u: '' },
   { g: 'Loperamide', f: 'capsule', s: ['2 mg'], r: 'oral', u: '' },
   { g: 'Oral rehydration salts', f: 'sachet', s: [''], r: 'oral', u: '' },
+  { g: 'Zinc sulfate', f: 'syrup', s: ['20 mg/5 mL'], r: 'oral', u: 'bottle' },
   // long-term
   { g: 'Metformin', f: 'tablet', s: ['500 mg', '850 mg', '1 g'], r: 'oral', u: '' },
   { g: 'Amlodipine', f: 'tablet', s: ['5 mg', '10 mg'], r: 'oral', u: '' },
   { g: 'Losartan potassium', f: 'tablet', s: ['50 mg', '100 mg'], r: 'oral', u: '' },
   { g: 'Atorvastatin', f: 'tablet', s: ['10 mg', '20 mg', '40 mg', '80 mg'], r: 'oral', u: '' },
-  { g: 'Rosuvastatin', f: 'tablet', s: ['10 mg', '20 mg'], r: 'oral', u: '' },
+  { g: 'Rosuvastatin', f: 'tablet', s: ['5 mg', '10 mg', '20 mg'], r: 'oral', u: '' },
+  { g: 'Simvastatin', f: 'tablet', s: ['10 mg', '20 mg', '40 mg'], r: 'oral', u: '' },
+  { g: 'Levothyroxine', f: 'tablet', s: ['25 mcg', '50 mcg', '100 mcg'], r: 'oral', u: '' },
+  { g: 'Aspirin', f: 'tablet', s: ['80 mg', '100 mg'], r: 'oral', u: '' },
+  { g: 'Clopidogrel', f: 'tablet', s: ['75 mg'], r: 'oral', u: '' },
+  { g: 'Warfarin', f: 'tablet', s: ['1 mg', '2.5 mg', '5 mg'], r: 'oral', u: '' },
+  { g: 'Sertraline', f: 'tablet', s: ['50 mg'], r: 'oral', u: '' },
+  { g: 'Escitalopram', f: 'tablet', s: ['10 mg'], r: 'oral', u: '' },
   { g: 'Salbutamol', f: 'inhaler', s: ['100 mcg/dose'], r: 'inhaled', u: 'inhaler' },
+  { g: 'Salbutamol', f: 'nebule', s: ['2.5 mg/2.5 mL'], r: 'inhaled', u: '' },
+  { g: 'Montelukast', f: 'tablet', s: ['4 mg', '5 mg', '10 mg'], r: 'oral', u: '' },
+  { g: 'Ambroxol', f: 'tablet', s: ['30 mg'], r: 'oral', u: '' },
   { g: 'Prednisone', f: 'tablet', s: ['5 mg', '10 mg', '20 mg'], r: 'oral', u: '' },
+  // dangerous drugs, need an S2 license
+  { g: 'Diazepam', f: 'tablet', s: ['5 mg', '10 mg'], r: 'oral', u: '' },
+  { g: 'Alprazolam', f: 'tablet', s: ['250 mcg', '500 mcg'], r: 'oral', u: '' },
+  { g: 'Clonazepam', f: 'tablet', s: ['500 mcg', '2 mg'], r: 'oral', u: '' },
+  { g: 'Zolpidem', f: 'tablet', s: ['10 mg'], r: 'oral', u: '' },
   // supplements
   { g: 'Ascorbic acid', f: 'tablet', s: ['500 mg'], r: 'oral', u: '' },
   { g: 'Ferrous sulfate', f: 'tablet', s: ['325 mg'], r: 'oral', u: '' },
   { g: 'Folic acid', f: 'tablet', s: ['1 mg', '5 mg'], r: 'oral', u: '' },
   { g: 'Vitamin D3 (Cholecalciferol)', f: 'capsule', s: ['1000 IU', '2000 IU'], r: 'oral', u: '' },
+  { g: 'Calcium carbonate', f: 'tablet', s: ['500 mg', '1250 mg'], r: 'oral', u: '' },
 ];
 
-export const FORMS = ['tablet', 'capsule', 'syrup', 'suspension', 'drops', 'cream', 'gel', 'ointment', 'lotion', 'topical solution', 'shampoo', 'inhaler', 'nasal spray', 'eye drops', 'eye ointment', 'ear drops', 'suppository', 'vaginal cream', 'sachet', 'injection'];
+export const FORMS = ['tablet', 'capsule', 'syrup', 'suspension', 'drops', 'cream', 'gel', 'ointment', 'lotion', 'topical solution', 'shampoo', 'inhaler', 'nasal spray', 'nebule', 'eye drops', 'eye ointment', 'ear drops', 'suppository', 'vaginal cream', 'sachet', 'injection'];
 
 export const ROUTES = {
   oral: { label: 'By mouth', verb: 'Take', after: 'by mouth' },
@@ -97,7 +155,7 @@ export const ROUTES = {
 export const DOSES = {
   oral: ['1 tablet', '2 tablets', '1/2 tablet', '1 capsule', '2 capsules', '5 mL', '2.5 mL', '10 mL', '1 sachet'],
   topical: ['a thin layer', 'a pea-sized amount', 'a small amount', '1 mL'],
-  inhaled: ['1 puff', '2 puffs'],
+  inhaled: ['1 puff', '2 puffs', '1 nebule'],
   eye: ['1 drop', '2 drops', 'a 1 cm strip'],
   ear: ['2 drops', '3 drops', '4 drops'],
   rectal: ['1 suppository'],
@@ -125,7 +183,7 @@ export function routeForForm(form) {
   if (/vagin|pessary/.test(f)) return 'vaginal';
   if (/suppos|rectal|enema/.test(f)) return 'rectal';
   if (/cream|gel|ointment|lotion|topical|shampoo|wash|foam/.test(f)) return 'topical';
-  if (/inhal/.test(f)) return 'inhaled';
+  if (/inhal|nebul/.test(f)) return 'inhaled';
   if (/nasal/.test(f)) return 'nasal';
   if (/inject|vial|ampule/.test(f)) return 'injection';
   return 'oral';

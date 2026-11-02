@@ -6,6 +6,7 @@
 import { PDFDocument, StandardFonts } from '../vendor/pdf-lib.mjs';
 import { qtyText, fmtDate, ageText } from './util.js';
 import { requestLine, groupOf, groupOrder, prepFor } from './tests.js';
+import { CERT_TYPES } from './cert.js';
 
 export const PAPERS = {
   'A5': { label: 'A5 (148 × 210 mm)', w: 419.53, h: 595.28 },
@@ -200,9 +201,9 @@ function build(rx, profile, images, scale) {
     for (const [l, v] of lic) { text(bx + bw / 2, yy, (l ? l + ' ' : '') + v, 'reg', 7.2 * k, ink, 'center'); yy += 8.6 * k; }
 
     let ly = lineY + 11.5 * k;
-    if (profile.showRxNo !== false && rx.no) { text(M, ly, (kind === 'req' ? 'Ref. No. ' : 'Rx No. ') + rx.no, 'reg', 7.2 * k, soft); ly += 8.6 * k; }
-    if (rx.validUntil && kind !== 'req') { text(M, ly, 'Valid until ' + fmtDate(rx.validUntil), 'reg', 7.2 * k, soft); ly += 8.6 * k; }
-    if (rx.followUp) { text(M, ly, 'Follow-up ' + fmtDate(rx.followUp), 'bold', 7.2 * k, ink); ly += 8.6 * k; }
+    if (profile.showRxNo !== false && rx.no) { text(M, ly, (kind === 'rx' ? 'Rx No. ' : 'Ref. No. ') + rx.no, 'reg', 7.2 * k, soft); ly += 8.6 * k; }
+    if (rx.validUntil && kind === 'rx') { text(M, ly, 'Valid until ' + fmtDate(rx.validUntil), 'reg', 7.2 * k, soft); ly += 8.6 * k; }
+    if (rx.followUp && kind !== 'cert') { text(M, ly, 'Follow-up ' + fmtDate(rx.followUp), 'bold', 7.2 * k, ink); ly += 8.6 * k; }
     if (profile.footer) for (const l of wrap(profile.footer, 'ital', 6.6 * k, bx - M - 10 * k).slice(0, 2)) { text(M, ly, l, 'ital', 6.6 * k, soft); ly += 8 * k; }
     ops.push({ t: 'pageno', x: W / 2, y: H - M * 0.55, size: 6.6 * k, n: pageNo });
     return fy;
@@ -213,20 +214,31 @@ function build(rx, profile, images, scale) {
   const hasLab = tests.some(t => t.kind === 'lab');
   const hasDx = tests.some(t => t.kind !== 'lab');
   const reqTitle = hasLab && hasDx ? 'Laboratory and diagnostic request' : hasLab ? 'Laboratory request' : 'Diagnostic request';
-  let kind = items.length || !tests.length ? 'rx' : 'req';
+  const cert = rx.cert && rx.cert.text && rx.cert.text.trim() ? rx.cert : null;
+  let kind = items.length ? 'rx' : tests.length ? 'req' : cert ? 'cert' : 'rx';
 
   function newPage(cont) {
     if (pages.length) pages.at(-1).bodyEnd = y;
     ops = [];
     pages.push({ w: W, h: H, ops, kind, cont });
     const hb = header();
-    y = patient(hb);
+    // a certificate names the patient in its wording, so it has no patient lines
+    y = kind === 'cert' ? hb + 8 * k : patient(hb);
     const limit = footer(pages.length, kind);
     Object.assign(pages.at(-1), { bodyStart: ops.length, top: y, limit });
     if (kind === 'rx') {
       text(M, y + 26 * kb, 'Rx', 'rx', 30 * kb, accent);
       if (cont) text(M + 38 * kb, y + 22 * kb, '(continued)', 'ital', 7.5 * kb, soft);
       y += 40 * kb;
+    } else if (kind === 'cert') {
+      text(W / 2, y + 22 * kb, CERT_TYPES[cert.type].title.toUpperCase() + (cont ? ' (CONTINUED)' : ''), 'bold', 14 * kb, accent, 'center');
+      y += 52 * kb;
+      if (!cont) {
+        text(W - M, y, fmtDate(rx.date), 'reg', 9.4 * kb, ink, 'right');
+        y += 22 * kb;
+        text(M, y, 'To whom it may concern:', 'reg', 9.4 * kb);
+        y += 22 * kb;
+      }
     } else {
       text(M, y + 18 * kb, reqTitle + (cont ? ' (continued)' : ''), 'bold', 13 * kb, accent);
       // two lines of space under the title before the first group
@@ -326,6 +338,31 @@ function build(rx, profile, images, scale) {
       text(M, y, 'Notes', 'bold', 7.5 * kb, soft);
       y += sl;
       wrap(rx.reqNotes, 'reg', bs, CW).forEach(l => { room(sl); text(M, y, l, 'reg', bs); y += sl; });
+    }
+  }
+
+  // ── the certificate, on a page of its own ─────────────────────
+  if (cert) {
+    if (kind !== 'cert') { kind = 'cert'; limit = newPage(false); }
+    const cs = 9.4 * kb, cl = 14 * kb;
+    for (const para of cert.text.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean)) {
+      const lab = para.match(/^(Diagnosis|Findings|Recommendation|Remarks):\s*/);
+      if (lab) {
+        const lw = width(lab[1] + ': ', 'reg', cs);
+        wrap(para.slice(lab[0].length), 'bold', cs, CW - lw).forEach((l, j) => {
+          room(cl);
+          if (j === 0) text(M, y, lab[1] + ':', 'reg', cs, soft);
+          text(M + lw, y, l, 'bold', cs);
+          y += cl;
+        });
+      } else {
+        wrap(para, 'reg', cs, CW).forEach(l => {
+          room(cl);
+          text(M, y, l, 'reg', cs);
+          y += cl;
+        });
+      }
+      y += 7 * kb;
     }
   }
 
