@@ -20,6 +20,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tab.on{color:#fff;border-bottom-color:var(--cs-brand-gold-light)}
 .bar-status{margin-left:auto;font:var(--cs-micro);color:#7C8899;letter-spacing:.02em}
 .bar-status.err{color:#E2736A}
+.bar-install{white-space:nowrap}
+.bar-status:empty+.bar-install{margin-left:auto}
 
 /* ── write view ────────────────────────────────────────── */
 .view{flex:1;min-height:0}
@@ -242,7 +244,7 @@ table.list .no{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--
 .desk-opts{display:flex;gap:var(--cs-4);margin-right:auto}
 .mini-check{display:inline-flex;align-items:center;gap:6px;font:500 12.5px/16px var(--cs-font);color:var(--cs-n-700);letter-spacing:0;cursor:pointer;text-transform:none}
 .mini-check input{width:16px;height:16px;accent-color:var(--cs-primary-600)}
-.desk-close,.mbar,.tab .short{display:none}
+.desk-close,.mbar,.tab .short,.bar-install .short{display:none}
 body.no-link .link-only{display:none}
 .qr-col{display:flex;flex-direction:column;gap:var(--cs-2)}
 #share-qr{width:216px;min-height:216px;display:grid;place-items:center;color:var(--cs-text-meta);font-size:13px;line-height:1.45;text-align:center;padding:var(--cs-3)}
@@ -282,8 +284,8 @@ body.no-link .link-only{display:none}
   body.preview-on .desk{top:calc(52px + env(safe-area-inset-top))}
   .brand span{display:none}
   .tab{padding:0 10px}
-  .tab .long{display:none}
-  .tab .short{display:inline}
+  .tab .long,.bar-install .long{display:none}
+  .tab .short,.bar-install .short{display:inline}
   .bar-status{display:none}
   .editor{padding:12px}
   .card{padding:14px 14px 16px}

@@ -1096,3 +1096,20 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || new URLSe
   });
   navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
 }
+
+// Chrome and Edge offer the install here, since their own install icon is
+// easy to miss. The button stays hidden when it is installed already.
+let installEvt = null;
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installEvt = e;
+  $('#install').hidden = false;
+});
+$('#install').onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  await installEvt.userChoice;
+  installEvt = null;
+  $('#install').hidden = true;
+};
+addEventListener('appinstalled', () => { $('#install').hidden = true; });
