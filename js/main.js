@@ -64,10 +64,31 @@ async function boot() {
   if (!data.profile.name) $('#first-run').hidden = false;
 }
 
+// The Certificate tab is the write view with its own draft, showing the
+// patient, the certificate and the signature only.
+let mode = 'rx';
+function certDraftFrom(saved) {
+  const d = draftFrom(saved);
+  d.cert ||= blankCert();
+  return d;
+}
+function setMode(m) {
+  if (m === mode) return;
+  if (mode === 'cert') data.certDraft = draft; else data.draft = draft;
+  mode = m;
+  draft = m === 'cert' ? certDraftFrom(data.certDraft) : draftFrom(data.draft);
+  document.body.classList.toggle('cert-mode', m === 'cert');
+  $('#sign-what').textContent = m === 'cert' ? 'Sign this certificate' : 'Sign this prescription';
+}
+function freshDraft() {
+  return mode === 'cert' ? certDraftFrom(null) : blankDraft();
+}
+
 function show(view) {
+  const write = view === 'write' || view === 'cert';
   $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.view === view));
-  $$('.view').forEach(v => v.hidden = v.id !== 'view-' + view);
-  if (view === 'write') { fillWrite(); refresh(); }
+  $$('.view').forEach(v => v.hidden = v.id !== 'view-' + (write ? 'write' : view));
+  if (write) { setMode(view === 'cert' ? 'cert' : 'rx'); fillWrite(); refresh(); }
   if (view === 'history') renderHistory();
   if (view === 'profile') fillProfile();
 }
@@ -105,8 +126,8 @@ function bindWrite() {
   $('#add-saved').onclick = openFavourites;
   $('#save-set').onclick = saveSet;
   $('#clear-draft').onclick = () => {
-    if (!confirm('Clear the patient and every medicine on this prescription?')) return;
-    draft = blankDraft(); fillWrite(); changed();
+    if (!confirm(mode === 'cert' ? 'Clear the patient and the certificate?' : 'Clear the patient and every medicine on this prescription?')) return;
+    draft = freshDraft(); fillWrite(); changed();
   };
   $('#sig-tablet').onclick = () => openHandoff();
   $('#sig-draw').onclick = () => openSignatureModal('draw');
@@ -494,7 +515,7 @@ function renderSig() {
 function changed() {
   syncCertText();
   renderSafety();
-  data.draft = draft;
+  if (mode === 'cert') data.certDraft = draft; else data.draft = draft;
   save();
   refresh();
 }
@@ -615,8 +636,8 @@ async function finish() {
     entry.savedPath = savedPath;
     entry.patientId = upsertPatient(draft.patient);
     data.history.unshift(entry);
-    draft = blankDraft();
-    data.draft = draft;
+    draft = freshDraft();
+    if (mode === 'cert') data.certDraft = draft; else data.draft = draft;
     await save(true);
     if (dir) saveBackup(dir, JSON.stringify(data)).catch(() => {});
     fillWrite();
@@ -911,8 +932,10 @@ async function openEntry(h) {
   $('#h-download', m).onclick = () => { download(blob, h.file); h.sent.push({ how: 'download', at: Date.now() }); save(); };
   $('#h-print', m).onclick = () => { printPdf(blob); h.sent.push({ how: 'print', at: Date.now() }); save(); };
   $('#h-copy', m).onclick = () => {
+    const certOnly = h.cert && !h.items.length && !(h.tests || []).length;
+    closeModal(); show(certOnly ? 'cert' : 'write');
     draft = { ...blankDraft(), patient: { ...h.patient }, items: h.items.length ? h.items.map(x => ({ ...x, id: uid('m') })) : [blankMed()], notes: h.notes, tests: (h.tests || []).map(t => ({ ...t, id: uid('t'), views: [...(t.views || [])] })), impression: h.impression || '', reqNotes: h.reqNotes || '', prep: h.prep !== false, prepEdits: { ...(h.prepEdits || {}) }, prepExtra: [...(h.prepExtra || [])], cert: h.cert ? { ...blankCert(h.cert.type), ...h.cert } : null };
-    closeModal(); show('write'); changed();
+    fillWrite(); changed();
     toast('Copied with today\'s date and a new Rx number.');
   };
 }
@@ -991,6 +1014,7 @@ function bindProfile() {
       Object.assign(data, incoming, { rev });
       data.archive ||= {};
       await save(true);
+      mode = 'rx'; document.body.classList.remove('cert-mode');
       draft = draftFrom(data.draft);
       fillProfile();
       fillWrite();

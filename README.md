@@ -117,8 +117,11 @@ not on the list gets no card and no warnings.
 
 ## Certificates
 
-Add a certificate makes a medical certificate, a fit to work certificate or a
-medical clearance on the same letterhead and signature. The wording is
+The Certificate tab makes a medical certificate, a fit to work certificate or
+a medical clearance on the same letterhead and signature. It shows only the
+patient, the certificate and the signature, and keeps its own draft, so a
+prescription half written in New prescription stays as it is. Add a
+certificate under New prescription puts one on the prescription instead. The wording is
 written from the boxes and the patient's details, and can be changed by hand.
 A certificate can go out alone or after the prescription as its own page.
 

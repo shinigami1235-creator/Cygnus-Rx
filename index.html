@@ -21,6 +21,7 @@
   <div class="brand"><img src="brand-assets/cygnus-swan.png" alt=""><span>Cygnus Rx</span></div>
   <nav class="tabs" role="tablist">
     <button class="tab" data-view="write"><span class="long">New prescription</span><span class="short">New</span></button>
+    <button class="tab" data-view="cert"><span class="long">Certificate</span><span class="short">Cert</span></button>
     <button class="tab" data-view="history">History</button>
     <button class="tab" data-view="profile"><span class="long">Doctor and clinic</span><span class="short">Doctor</span></button>
   </nav>
@@ -38,22 +39,22 @@
         <label class="f">Sex<select id="p-sex"><option value=""></option><option>F</option><option>M</option></select></label>
         <label class="f">Birthdate<input id="p-birthdate" type="date"></label>
         <label class="f">Age<input id="p-age" inputmode="numeric" placeholder="34"></label>
-        <label class="f">Weight, kg<input id="p-weight" inputmode="decimal" placeholder="For children"></label>
+        <label class="f rx-only">Weight, kg<input id="p-weight" inputmode="decimal" placeholder="For children"></label>
         <label class="f span2">Address<input id="p-address" placeholder="Barangay, city"></label>
         <label class="f">Date<input id="rx-date" type="date"></label>
-        <label class="f span2">Allergies<input id="p-allergies" placeholder="Penicillin, hives"></label>
-        <label class="f span2">Takes regularly<input id="p-regular" placeholder="Losartan 50 mg, metformin"></label>
+        <label class="f span2 rx-only">Allergies<input id="p-allergies" placeholder="Penicillin, hives"></label>
+        <label class="f span2 rx-only">Takes regularly<input id="p-regular" placeholder="Losartan 50 mg, metformin"></label>
       </div>
-      <div class="p-flags" id="p-flags">
+      <div class="p-flags rx-only" id="p-flags">
         <label class="check"><input type="checkbox" id="p-pregnant"> Pregnant</label>
         <label class="check"><input type="checkbox" id="p-breastfeeding"> Breastfeeding</label>
       </div>
       <datalist id="patient-list"></datalist>
-      <p class="meta">Allergies, regular medicines and pregnancy are checked against the medicines below. They do not print.</p>
+      <p class="meta rx-only">Allergies, regular medicines and pregnancy are checked against the medicines below. They do not print.</p>
       <p class="meta" id="p-known"></p>
     </div>
 
-    <div class="card">
+    <div class="card rx-only" id="meds-card">
       <div class="card-head"><h2>Medicines</h2>
         <div class="head-acts"><button class="btn-ghost sm" id="find-med">Find by condition</button><button class="btn-ghost sm" id="add-saved">Add from favourites</button><button class="btn-ghost sm" id="save-set">Save list as a set</button></div>
       </div>
@@ -61,7 +62,7 @@
       <button class="btn-add" id="add-med">+ Add medicine</button>
     </div>
 
-    <div class="card" id="req-card">
+    <div class="card rx-only" id="req-card">
       <div class="card-head"><h2>Laboratory and imaging</h2>
         <div class="head-acts"><button class="btn-ghost sm" id="add-tests">Add tests</button></div>
       </div>
@@ -81,7 +82,7 @@
 
     <div class="card" id="cert-card">
       <div class="card-head"><h2>Certificate</h2>
-        <div class="head-acts"><button class="btn-ghost sm" id="cert-add">Add a certificate</button><button class="btn-ghost sm" id="cert-remove" hidden>Remove certificate</button></div>
+        <div class="head-acts rx-only"><button class="btn-ghost sm" id="cert-add">Add a certificate</button><button class="btn-ghost sm" id="cert-remove" hidden>Remove certificate</button></div>
       </div>
       <div id="cert-body" hidden>
         <div class="grid g-2">
@@ -99,11 +100,11 @@
           <span class="lab">Wording, as printed <button id="cert-rebuild" hidden>Write it again from the boxes above</button></span>
           <textarea id="cert-text" rows="7"></textarea>
         </div>
-        <p class="meta">Prints on a page of its own, signed like the prescription.</p>
+        <p class="meta rx-only">Prints on a page of its own, signed like the prescription.</p>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card rx-only">
       <h2>Instructions and dates</h2>
       <label class="f">Instructions to the patient<textarea id="rx-notes" rows="3" placeholder="Use sunscreen SPF 50 every morning. Avoid the sun for 2 weeks."></textarea></label>
       <div class="grid g-dates">
@@ -115,7 +116,7 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Signature</h2><label class="check"><input type="checkbox" id="rx-sign"> Sign this prescription</label></div>
+      <div class="card-head"><h2>Signature</h2><label class="check"><input type="checkbox" id="rx-sign"> <span id="sign-what">Sign this prescription</span></label></div>
       <div class="sig-row">
         <div class="sig-current" id="sig-current"></div>
         <div class="sig-acts">
