@@ -84,6 +84,16 @@ The catalog holds 123 laboratory tests in 12 categories, 112 imaging parts
 across X-ray, ultrasound, CT, MRI and mammography, and 15 other tests such as
 ECG, 2D echo and spirometry. It lives in `web\js\tests.js`.
 
+## Medicines not on the list
+
+Typing in Generic name opens a list of matching medicines from the starter
+list, your own medicines and your favourites. Its last row, Add as a new
+medicine, saves one that is not there, with its form, strengths, how it is
+taken and what the quantity counts. It then fills in like any medicine on the
+list, marked Yours, and the × beside it removes it. Your medicines are kept
+with the rest of the data and go into the backup. They have no About card and
+no warnings.
+
 ## Medicine notes and warnings
 
 About on a medicine opens its card: class, coverage for antibiotics

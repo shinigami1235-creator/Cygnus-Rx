@@ -191,8 +191,13 @@ function bindWrite() {
   }
 }
 
+// The starter list with the doctor's own medicines first.
+function allDrugs() {
+  return [...(data.myDrugs || []), ...DRUGS];
+}
+
 function genericOptions() {
-  const names = new Set(DRUGS.map(d => d.g));
+  const names = new Set(allDrugs().map(d => d.g));
   for (const s of data.saved) for (const m of s.items) if (m.generic) names.add(m.generic);
   $('#generic-list').innerHTML = [...names].sort().map(n => `<option value="${esc(n)}">`).join('');
 }
@@ -238,7 +243,8 @@ function matchPatient(fill = true) {
 function medCard(m, i) {
   const r = m.route || 'oral';
   const opts = (list, v) => list.map(x => `<option value="${esc(x)}"${x === v ? ' selected' : ''}>${esc(x)}</option>`).join('');
-  const drug = DRUGS.find(d => d.g.toLowerCase() === (m.generic || '').toLowerCase() && (!m.form || d.f === m.form)) || DRUGS.find(d => d.g.toLowerCase() === (m.generic || '').toLowerCase());
+  const all = allDrugs();
+  const drug = all.find(d => d.g.toLowerCase() === (m.generic || '').toLowerCase() && (!m.form || d.f === m.form)) || all.find(d => d.g.toLowerCase() === (m.generic || '').toLowerCase());
   const strengths = drug ? drug.s.filter(Boolean) : [];
   return `
   <div class="med" data-i="${i}">
@@ -254,7 +260,7 @@ function medCard(m, i) {
     </div>
     <div class="med-warn"></div>
     <div class="grid g-med1">
-      <label class="f">Generic name <input data-k="generic" list="generic-list" value="${esc(m.generic)}" placeholder="Tretinoin" autocomplete="off"></label>
+      <div class="gen-wrap"><label class="f">Generic name <input data-k="generic" value="${esc(m.generic)}" placeholder="Tretinoin" autocomplete="off" role="combobox" aria-autocomplete="list"></label><div class="gen-pop" hidden></div></div>
       <label class="f">Strength<input data-k="strength" list="str-${m.id}" value="${esc(m.strength)}" placeholder="0.025%"><datalist id="str-${m.id}">${strengths.map(s => `<option value="${esc(s)}">`).join('')}</datalist></label>
       <label class="f">Form<input data-k="form" list="form-list" value="${esc(m.form)}" placeholder="cream"></label>
     </div>
@@ -298,6 +304,7 @@ function renderMeds() {
       m.sigEdited = true;
       if (!card.querySelector('[data-act=rebuild]')) card.querySelector('.lab').insertAdjacentHTML('beforeend', '<button data-act="rebuild">Write it again from the boxes above</button>');
     }
+    if (k === 'generic') genPop(e.target);
     if (k === 'generic' || k === 'form') {
       pickDrug(m, card, k);
       card = $(`#meds .med[data-i="${card.dataset.i}"]`);
@@ -310,6 +317,10 @@ function renderMeds() {
     if (k === 'generic' && !!infoFor(m.generic, m.route) !== !!card.querySelector('[data-act=about]')) rerenderCard(card, m);
     changed();
   };
+  box.onfocusin = e => { if (e.target.dataset.k === 'generic') genPop(e.target); };
+  box.onfocusout = e => { if (e.target.dataset.k === 'generic') setTimeout(() => { if (document.activeElement !== e.target) hidePop(e.target); }, 150); };
+  box.onkeydown = e => { if (e.target.dataset.k === 'generic') genKey(e); };
+  box.onpointerdown = e => { if (e.target.closest('.gen-pop')) e.preventDefault(); };
   box.onchange = e => {
     const card = e.target.closest('.med');
     if (!card || e.target.dataset.k !== 'route') return;
@@ -320,6 +331,7 @@ function renderMeds() {
     changed();
   };
   box.onclick = e => {
+    if (e.target.closest('.gen-pop')) { genClick(e); return; }
     const act = e.target.dataset.act;
     const card = e.target.closest('.med');
     if (!act || !card) return;
@@ -380,7 +392,7 @@ function renderSafety() {
 // A medicine picked from Find by condition. It fills the form and strength
 // when the starter list sells it in one form only.
 function addMedicine(key) {
-  const matches = DRUGS.filter(d => d.g.toLowerCase() === key);
+  const matches = allDrugs().filter(d => d.g.toLowerCase() === key);
   const m = { ...blankMed(), generic: matches[0]?.g || key.replace(/^./, c => c.toUpperCase()) };
   if (matches.length === 1) {
     const d = matches[0];
@@ -430,7 +442,135 @@ function rerenderCard(card, m) {
   const focusK = document.activeElement?.dataset?.k;
   card.replaceWith(tmp.firstElementChild);
   renderSafety();
-  if (focusK) $(`#meds .med[data-i="${i}"] [data-k="${focusK}"]`)?.focus();
+  const again = focusK && $(`#meds .med[data-i="${i}"] [data-k="${focusK}"]`);
+  if (again) { again.focus(); if (focusK === 'generic') genPop(again); }
+}
+
+// ── the generic name list ──────────────────────────────────────
+// Matches from the starter list, the doctor's own medicines and favourites,
+// with a last row that saves a medicine not on the list.
+
+function genNames(q) {
+  const all = allDrugs();
+  const byName = new Map();
+  for (const d of all) {
+    const k = d.g.toLowerCase();
+    const row = byName.get(k) || { g: d.g, forms: new Set(), mine: false };
+    row.forms.add(d.f); if (d.mine) row.mine = true;
+    byName.set(k, row);
+  }
+  for (const s of data.saved) for (const m of s.items) if (m.generic && !byName.has(m.generic.toLowerCase())) byName.set(m.generic.toLowerCase(), { g: m.generic, forms: new Set([m.form].filter(Boolean)), mine: false });
+  const rows = [...byName.values()];
+  if (!q) return rows.filter(r => r.mine).concat(rows.filter(r => !r.mine)).slice(0, 8);
+  return rows.filter(r => r.g.toLowerCase().includes(q))
+    .sort((a, b) => (b.g.toLowerCase().startsWith(q) - a.g.toLowerCase().startsWith(q)) || (b.mine - a.mine) || a.g.localeCompare(b.g))
+    .slice(0, 8);
+}
+
+let genQuiet = false;
+function genPop(input) {
+  if (genQuiet) return;
+  const pop = input.closest('.gen-wrap').querySelector('.gen-pop');
+  const typed = input.value.trim();
+  const q = typed.toLowerCase();
+  const rows = genNames(q);
+  const exact = rows.some(r => r.g.toLowerCase() === q);
+  pop.innerHTML = rows.map((r, n) => `
+    <div class="gen-row" data-g="${esc(r.g)}" data-n="${n}">
+      <span>${esc(r.g)}</span>
+      <span class="gen-meta">${esc([...r.forms].join(', '))}${r.mine ? ` <span class="tag-mine">Yours</span><button class="gen-del" data-del="${esc(r.g)}" aria-label="Remove ${esc(r.g)} from your medicines">×</button>` : ''}</span>
+    </div>`).join('') +
+    `<div class="gen-row gen-add" data-add="${esc(exact ? '' : typed)}" data-n="${rows.length}">${typed && !exact ? `+ Add "${esc(typed)}" as a new medicine` : '+ Add a medicine not on the list'}</div>`;
+  pop.hidden = false;
+  pop.dataset.on = '-1';
+}
+
+function hidePop(input) {
+  const pop = input.closest('.gen-wrap')?.querySelector('.gen-pop');
+  if (pop) pop.hidden = true;
+}
+
+function genKey(e) {
+  const pop = e.target.closest('.gen-wrap').querySelector('.gen-pop');
+  if (pop.hidden) { if (e.key === 'ArrowDown') genPop(e.target); return; }
+  const rows = [...pop.querySelectorAll('.gen-row')];
+  let on = +pop.dataset.on;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    on = e.key === 'ArrowDown' ? Math.min(on + 1, rows.length - 1) : Math.max(on - 1, 0);
+    pop.dataset.on = on;
+    rows.forEach((r, n) => r.classList.toggle('on', n === on));
+    rows[on]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && on >= 0) {
+    e.preventDefault();
+    genChoose(e.target, rows[on]);
+  } else if (e.key === 'Escape') {
+    pop.hidden = true;
+  }
+}
+
+function genClick(e) {
+  const input = e.target.closest('.gen-wrap').querySelector('[data-k=generic]');
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const g = del.dataset.del;
+    if (!confirm(`Remove ${g} from your medicines? Prescriptions already written keep it.`)) return;
+    data.myDrugs = (data.myDrugs || []).filter(d => d.g !== g);
+    save(true); genericOptions(); genPop(input);
+    return;
+  }
+  const row = e.target.closest('.gen-row');
+  if (row) genChoose(input, row);
+}
+
+function genChoose(input, row) {
+  hidePop(input);
+  if (row.classList.contains('gen-add')) {
+    const card = input.closest('.med');
+    openNewDrug(row.dataset.add, d => {
+      const m = draft.items[+card.dataset.i];
+      Object.assign(m, { generic: d.g, form: d.f, strength: d.s.length === 1 ? d.s[0] : '', autoStrength: d.s.length === 1, route: d.r, qtyUnit: d.u || m.qtyUnit });
+      if (!m.sigEdited) m.sig = buildSig(m);
+      rerenderCard(card, m);
+      changed();
+    });
+    return;
+  }
+  input.value = row.dataset.g;
+  genQuiet = true;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $$('#meds .gen-pop').forEach(el => { el.hidden = true; });
+  setTimeout(() => { genQuiet = false; }, 0);
+}
+
+// A medicine the starter list does not have, saved for next time.
+function openNewDrug(name, onSave) {
+  const m = openModal(`
+    <div class="m-head"><h2>New medicine</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
+    <div class="m-body">
+      <div class="grid g-2">
+        <label class="f span2">Generic name<input id="nd-g" value="${esc(name)}" placeholder="Niacinamide"></label>
+        <label class="f">Form<input id="nd-f" list="form-list" placeholder="serum"></label>
+        <label class="f">How<select id="nd-r">${Object.entries(ROUTES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></label>
+        <label class="f span2">Strengths<input id="nd-s" placeholder="5%, 10%"></label>
+        <label class="f">Counted in<input id="nd-u" list="unit-list" placeholder="bottle"></label>
+      </div>
+      <p class="meta">It joins the generic name list on this device and fills the form and strength next time. Separate strengths with commas.</p>
+    </div>
+    <div class="m-foot"><button class="btn-ghost" data-close>Cancel</button><button class="btn-primary" id="nd-save">Save and use</button></div>`);
+  const f = $('#nd-f', m), r = $('#nd-r', m);
+  f.oninput = () => { r.value = routeForForm(f.value); };
+  $('#nd-save', m).onclick = () => {
+    const g = $('#nd-g', m).value.trim().replace(/^./, c => c.toUpperCase());
+    const form = f.value.trim().toLowerCase();
+    if (!g || !form) { toast(!g ? 'Type the generic name.' : 'Type the form, such as tablet or cream.'); return; }
+    const d = { g, f: form, s: $('#nd-s', m).value.split(',').map(x => x.trim()).filter(Boolean), r: r.value, u: $('#nd-u', m).value.trim(), mine: true };
+    data.myDrugs = [d, ...(data.myDrugs || []).filter(x => !(x.g.toLowerCase() === g.toLowerCase() && x.f === form))];
+    save(true); genericOptions();
+    closeModal();
+    toast(`${g} ${form} saved to your medicines.`);
+    onSave(d);
+  };
 }
 
 // Choosing a generic from the list fills form, strength and route when they
@@ -439,7 +579,7 @@ function rerenderCard(card, m) {
 // cleared when the form changes to one it does not belong to.
 function pickDrug(m, card, changedKey) {
   const name = (m.generic || '').trim().toLowerCase();
-  const matches = DRUGS.filter(d => d.g.toLowerCase() === name);
+  const matches = allDrugs().filter(d => d.g.toLowerCase() === name);
   const before = JSON.stringify([m.form, m.strength, m.route, m.qtyUnit]);
   const d = matches.find(x => x.f === (m.form || '').trim().toLowerCase()) || (matches.length === 1 ? matches[0] : null);
   if (changedKey === 'form' && m.autoStrength && (!d || !d.s.includes(m.strength))) { m.strength = ''; m.autoStrength = false; }
