@@ -70,20 +70,36 @@ function interactionsOf(info) {
 export function openAbout(generic, route, onAdd, onBack) {
   const info = infoFor(generic, route);
   if (!info) return;
-  const list = (title, items, tag) => items?.length ? `<h3>${title}</h3><ul>${items.map(x => `<li>${esc(x)}${tag ? ` <span class="tag-off">${tag}</span>` : ''}</li>`).join('')}</ul>` : '';
-  const line = (title, v) => v ? `<h3>${title}</h3><p>${esc(v)}</p>` : '';
-  const lvl = (title, v) => v ? `<h3>${title}</h3><p><span class="lvl ${v[0]}">${LEVEL[v[0]]}</span> ${esc(v[1])}</p>` : '';
+  // headings carry ids so the links at the top can jump to them
+  const id = t => 'ab-' + t.toLowerCase().replace(/[^a-z]+/g, '-');
+  const list = (title, items, tag) => items?.length ? `<h3 id="${id(title)}">${title}</h3><ul>${items.map(x => `<li>${esc(x)}${tag ? ` <span class="tag-off">${tag}</span>` : ''}</li>`).join('')}</ul>` : '';
+  const line = (title, v) => v ? `<h3 id="${id(title)}">${title}</h3><p>${esc(v)}</p>` : '';
+  const lvl = (title, v) => v ? `<h3 id="${id(title)}">${title}</h3><p><span class="lvl ${v[0]}">${LEVEL[v[0]]}</span> ${esc(v[1])}</p>` : '';
   const inter = interactionsOf(info);
   const f = forms(info.key, !['topical', 'vaginal', 'eye', 'ear'].includes(route));
   const raw = INFO[info.key];
   const byMouth = !['topical', 'vaginal', 'eye', 'ear'].includes(route);
   const other = raw.oral || raw.topical ? (byMouth ? 'topical' : 'oral') : null;
+  // a medicine with notes for the tablet and for the cream shows both as tabs
+  const formName = mouth => cap(forms(info.key, mouth).join(', ')) || (mouth ? 'By mouth' : 'On the skin');
+  const tabs = other ? `<div class="about-tabs" role="tablist">${[true, false].map(mouth => `<button role="tab" class="about-tab${mouth === byMouth ? ' on' : ''}" aria-selected="${mouth === byMouth}" ${mouth === byMouth ? '' : 'data-switch="1"'}>${esc(formName(mouth))}</button>`).join('')}</div>` : '';
+  const anyMicro = info.cover || info.bugs || info.virus || info.fungi || info.parasites;
+  const jumps = [
+    anyMicro && [info.cover ? 'ab-coverage' : info.bugs ? 'ab-organisms' : info.virus ? 'ab-viruses' : info.fungi ? 'ab-fungi' : 'ab-parasites', 'Coverage'],
+    info.uses?.length && ['ab-used-for', 'Used for'],
+    info.off?.length && ['ab-off-label', 'Off-label'],
+    (info.preg || info.lact) && [info.preg ? 'ab-pregnancy' : 'ab-breastfeeding', 'Pregnancy'],
+    info.no?.length && ['ab-do-not-use-with', 'Do not use'],
+    info.kids && ['ab-children', 'Children'],
+    inter.length && ['ab-interactions', 'Interactions'],
+  ].filter(Boolean);
   const m = openModal(`
     <div class="m-head"><h2>${esc(cap(info.key))}</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
+    ${tabs || jumps.length > 3 ? `<div class="about-top">${tabs}${jumps.length > 3 ? `<nav class="about-jump" aria-label="Sections">${jumps.map(([to, t]) => `<button class="chip-link" data-go="${to}">${t}</button>`).join('')}</nav>` : ''}</div>` : ''}
     <div class="m-body about">
       <p class="about-cls">${esc(info.cls)}${f.length ? ' &middot; ' + esc(f.join(', ')) : ''}${info.s2 ? ' <span class="lvl avoid">S2</span>' : ''}</p>
       ${info.boxed ? `<p class="boxed"><b>Boxed warning.</b> ${esc(info.boxed)}</p>` : ''}
-      ${info.cover ? `<h3>Coverage</h3>${coverChips(info.cover)}<p class="meta">Dark: reliable. Light: some, or resistance is common. Grey: none.</p>` : ''}
+      ${info.cover ? `<h3 id="ab-coverage">Coverage</h3>${coverChips(info.cover)}<p class="meta">Dark: reliable. Light: some, or resistance is common. Grey: none.</p>` : ''}
       ${line('Organisms', info.bugs)}${line('Viruses', info.virus)}${line('Fungi', info.fungi)}${line('Parasites', info.parasites)}
       ${list('Used for', info.uses)}
       ${list('Off-label', info.off, 'off-label')}
@@ -92,13 +108,17 @@ export function openAbout(generic, route, onAdd, onBack) {
       ${list('Do not use with', info.no)}
       ${list('Watch for', info.watch)}
       ${line('Children', info.kids)}
-      ${inter.length ? `<h3>Interactions</h3><ul>${inter.map(x => `<li><span class="lvl ${x.lvl}">${LEVEL[x.lvl]}</span> <b>${esc(cap(x.who))}.</b> ${esc(x.text)}</li>`).join('')}</ul>` : ''}
+      ${inter.length ? `<h3 id="ab-interactions">Interactions</h3><ul>${inter.map(x => `<li><span class="lvl ${x.lvl}">${LEVEL[x.lvl]}</span> <b>${esc(cap(x.who))}.</b> ${esc(x.text)}</li>`).join('')}</ul>` : ''}
       <p class="meta source">Written from product labels, the BNF, the Sanford Guide and LactMed. Checked against the US and UK labels on ${fmtDate(CHECKED)}. Check the product label for the brand you prescribe.</p>
     </div>
-    <div class="m-foot">${other ? `<button class="btn-ghost" id="about-other">${other === 'oral' ? 'By mouth' : 'On the skin'}</button>` : ''}${onBack ? '<button class="btn-ghost" id="about-back">Back to results</button>' : '<button class="btn-ghost" data-close>Close</button>'}${onAdd ? '<button class="btn-primary" id="about-add">Add to prescription</button>' : ''}</div>`);
+    <div class="m-foot">${onBack ? '<button class="btn-ghost" id="about-back">Back to results</button>' : '<button class="btn-ghost" data-close>Close</button>'}${onAdd ? '<button class="btn-primary" id="about-add">Add to prescription</button>' : ''}</div>`);
   if (onAdd) $('#about-add', m).onclick = () => { closeModal(); onAdd(info.key); };
   if (onBack) $('#about-back', m).onclick = onBack;
-  if (other) $('#about-other', m).onclick = () => openAbout(generic, other, onAdd, onBack);
+  if (other) $('[data-switch]', m).onclick = () => openAbout(generic, other, onAdd, onBack);
+  m.querySelector('.about-jump')?.addEventListener('click', e => {
+    const to = e.target.dataset.go;
+    if (to) m.querySelector('#' + to)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
 }
 
 // ── search by condition ────────────────────────────────────────

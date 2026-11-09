@@ -5,7 +5,7 @@ import { linkUp, linkFetch, linkPossible } from './link.js';
 import { folderPossible, folder, chooseFolder, forgetFolder, folderReady, savePdf, saveBackup } from './folder.js';
 import { loadFonts, layoutRx, PAPERS, medTitle, clean, hasContent, HEAD_ORDER } from './layout.js';
 import { drawPage, buildPdf, imageInfo } from './render.js';
-import { DRUGS, FORMS, ROUTES, DOSES, AREAS, FREQS, TIMING, DURATIONS, QTY_UNITS, routeForForm, buildSig } from './drugs.js';
+import { DRUGS, FORMS, ROUTES, DOSES, AREAS, FREQS, TIMING, DURATIONS, QTY_UNITS, routeForForm, knownRoute, buildSig } from './drugs.js';
 import { currentSig, openSignatureModal, openHandoff, useSignature, deleteSignature, qrSvg } from './signature.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { fmtDate, todayISO, addDays, uid, esc, slug, ageText } from './util.js';
@@ -39,6 +39,15 @@ function draftFrom(saved) {
   const d = { ...blankDraft(), ...(saved || {}) };
   d.patient = { ...blankDraft().patient, ...(d.patient || {}) };
   if (!d.items?.length) d.items = [blankMed()];
+  // a medicine saved as a tablet on the skin (or a cream by mouth) is put right
+  for (const m of d.items) {
+    const fr = knownRoute(m.form);
+    if (fr && fr !== m.route && (fr === 'topical' || m.route === 'topical')) {
+      if ((DOSES[m.route] || []).includes(m.dose)) m.dose = '';
+      m.route = fr;
+      if (!m.sigEdited) m.sig = buildSig(m);
+    }
+  }
   return d;
 }
 
@@ -601,6 +610,13 @@ function pickDrug(m, card, changedKey) {
   } else if (changedKey === 'generic' && matches.length && !m.dose && !m.freq && new Set(matches.map(x => x.r)).size === 1) {
     // every form goes the same way (tretinoin cream and gel), so the route is known
     m.route = matches[0].r;
+  }
+  // A tablet is never on the skin and a cream never by mouth, whatever the
+  // card had before. A preset dose from the old way (a thin layer) goes too.
+  const fr = d?.r || knownRoute(m.form);
+  if (fr && fr !== m.route && (fr === 'topical' || m.route === 'topical')) {
+    if ((DOSES[m.route] || []).includes(m.dose)) m.dose = '';
+    m.route = fr;
   }
   if (!m.sigEdited) m.sig = buildSig(m);
   if (JSON.stringify([m.form, m.strength, m.route, m.qtyUnit]) !== before) { rerenderCard(card, m); return; }

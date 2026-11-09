@@ -96,7 +96,7 @@ export const INFO = {
       cls: 'Lincosamide antibiotic, topical', dup: 'topical antibiotic',
       uses: ['Acne vulgaris'],
       off: ['Folliculitis', 'Mild hidradenitis suppurativa', 'Perioral dermatitis'],
-      cover: null, bugs: 'Cutibacterium acnes and staphylococci on the skin.',
+      cover: { gp: 2, gn: 0, aty: 0, ana: 2, mrsa: 1, pseu: 0 }, bugs: 'Cutibacterium acnes (an anaerobe) and staphylococci on the skin. Resistance grows when used alone, so pair it with benzoyl peroxide.',
       preg: [OK, 'Very little absorbed.'], lact: [OK, 'Very little absorbed.'],
       kidney: '', no: ['Past ulcerative colitis, Crohn\'s disease or antibiotic-associated colitis'],
       watch: ['Use with benzoyl peroxide or a retinoid, never alone, since C. acnes resistance builds quickly.'],
@@ -198,6 +198,7 @@ export const INFO = {
     watch: ['Limit to 10 days to keep resistance down.'],
     child: [2, CAU, 'Ointment from 2 months, cream from 3 months.'],
     kidney: 'The ointment base (polyethylene glycol) can build up in moderate or severe kidney disease when used on large open areas.',
+    cover: { gp: 2, gn: 0, aty: 0, ana: 0, mrsa: 2, pseu: 0 },
   },
   'fusidic acid': {
     cls: 'Topical antibiotic, fusidane', dup: 'topical antibiotic', tags: [],
@@ -206,6 +207,7 @@ export const INFO = {
     bugs: 'Staphylococcus aureus including many MRSA, streptococci less well.',
     preg: [OK, 'Little absorbed.'], lact: [OK, 'Little absorbed. Keep it off the breast.'],
     watch: ['Resistance rises fast with long use. Keep to 7 to 10 days.'],
+    cover: { gp: 2, gn: 0, aty: 0, ana: 0, mrsa: 1, pseu: 0 },
   },
   'hydrocortisone': {
     cls: 'Mild topical corticosteroid', dup: 'topical steroid', tags: [],
@@ -266,6 +268,7 @@ export const INFO = {
     no: ['Sulfa allergy', 'Babies under 2 months', 'Late pregnancy'],
     watch: ['Can lower white cells over large burns.', 'G6PD deficiency: haemolysis possible.'],
     child: [2, AV, 'Not under 2 months.'],
+    cover: { gp: 2, gn: 2, aty: 0, ana: 0, mrsa: 1, pseu: 2 },
   },
   'ketoconazole': {
     cls: 'Azole antifungal, topical', tags: [],
@@ -667,7 +670,7 @@ export const INFO = {
     topical: {
       cls: 'Nitroimidazole, topical', dup: 'topical antibiotic',
       uses: ['Rosacea, the bumps and pustules', 'Bacterial vaginosis (vaginal gel)'],
-      off: ['Perioral dermatitis'], cover: null, bugs: '', parasites: '',
+      off: ['Perioral dermatitis'], cover: { gp: 0, gn: 0, aty: 0, ana: 2, mrsa: 0, pseu: 0 }, bugs: 'Anaerobes and Gardnerella in bacterial vaginosis (vaginal gel). In rosacea it works mainly against inflammation.', parasites: 'Not for trichomoniasis: the gel does not reach the urethra and glands. Use tablets.',
       preg: [OK, 'Little absorbed.'], lact: [OK, 'Little absorbed.'],
       kidney: '', no: [], watch: ['Takes 6 to 9 weeks to show.'],
       boxed: '',

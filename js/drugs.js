@@ -211,6 +211,15 @@ export const DURATIONS = ['for 3 days', 'for 5 days', 'for 7 days', 'for 10 days
 
 export const QTY_UNITS = ['', 'tube', 'tubes', 'bottle', 'bottles', 'box', 'inhaler', 'sachets', 'vial', 'pack'];
 
+// The route a form settles, or null for a form that does not say (serum).
+export function knownRoute(form) {
+  const f = (form || '').toLowerCase().trim();
+  if (!f) return null;
+  const r = routeForForm(f);
+  if (r !== 'oral') return r;
+  return /tablet|capsule|caplet|syrup|suspension|drops|sachet|granules|elixir|solution|lozenge|powder/.test(f) ? 'oral' : null;
+}
+
 export function routeForForm(form) {
   const f = (form || '').toLowerCase();
   if (/eye|ophthalmic/.test(f)) return 'eye';
