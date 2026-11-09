@@ -159,17 +159,31 @@ A certificate can go out alone or after the prescription as its own page.
 You sign once and the signature is kept for every prescription after that.
 
 - **Sign here** signs on the screen, with a pen, a finger or the mouse.
-- **Type or photo** takes a typed name, or a photo of your signature on white
-  paper.
+- **Type, photo or file** takes a typed name, a photo of your signature on
+  white paper, or a signature file. A photo has the paper removed. A file with
+  a clear background is kept as it is.
 - **Sign on tablet**, on the PC, sends the signature from a tablet's pen to the
   PC through Cygnus Rx Link.
+
+A signature can also go from a phone or tablet to the computer as a file, with
+no Cygnus Rx Link:
+
+1. On the phone or tablet, open Cygnus Rx, press **Sign here** and sign.
+2. Press **Save as file** and send Signature - your name.png to the computer
+   by Messenger, email, AirDrop or Drive.
+3. On the computer, press **Type, photo or file**, choose **Photo or file** and
+   pick it.
+
+Every signature under Saved signatures in Doctor and clinic has its own Save
+as file.
 
 ## Cygnus Rx Link
 
 Cygnus Rx needs no server. Cygnus Rx Link is a small program for the PC that
-you open only for two things that go over the clinic wifi: signing on a tablet,
-and sending a PDF to a patient's phone by QR code. Close its window when you
-are done and it stops.
+you open only for two things that go over the clinic wifi: sending a PDF to a
+patient's phone by QR code, and signing live on a tablet. Close its window when
+you are done and it stops. Without it, the PDF still goes out by Share,
+Messenger or download, and a signature can come in as a file.
 
 To install it, open Doctor and clinic in Cygnus Rx and click **Download for
 Windows**, then open Cygnus Rx Link Setup.exe. Windows warns the first time,
@@ -179,12 +193,16 @@ password, adds Cygnus Rx Link to the Start menu and the desktop, and is removed
 from Settings, Apps, Installed apps. The direct address is
 https://shinigami1235-creator.github.io/Cygnus-Rx/downloads/Cygnus-Rx-Link-Setup.exe.
 
-The Mac app is built by `scripts/build.sh` as dist/Cygnus Rx Link (Mac).zip,
-for Apple chip and Intel Macs, but is not offered for download until it is
-signed for the whole app.
+On a Mac, click **Download for Mac**, open the zip and drag Cygnus Rx Link to
+Applications, then open it. The Mac says it can't check the app the first time,
+because it isn't notarised by Apple: open System Settings, Privacy & Security,
+scroll down and click Open Anyway. It runs from the menu bar, on Apple chip and
+Intel Macs, from macOS 11. `scripts/build.sh` builds it as
+dist/Cygnus Rx Link (Mac).zip and signs it ad hoc with rcodesign when
+RCODESIGN points to it or it sits under /tmp/rcs.
 
-1. Open **Cygnus Rx Link** from the Start menu or the desktop. A small window
-   says it is on.
+1. Open **Cygnus Rx Link** from the Start menu or the desktop, or from
+   Applications on a Mac. A small window says it is on.
 2. In Cygnus Rx, click **Sign on tablet**, or finish a prescription to get the
    patient's QR code.
 3. Close the Cygnus Rx Link window afterwards.
@@ -283,6 +301,7 @@ node tests/requests.mjs http://localhost:8080
 node tests/layout.mjs http://localhost:8080
 node tests/mobile.mjs http://localhost:8080      # phone and tablet sizes, no Link
 node tests/prep.mjs http://localhost:8080        # editing the patient preparation lines
+node tests/sigfile.mjs http://localhost:8080     # signature saved as a file and loaded back
 sh tests/security.sh 192.0.2.2 7718     # what the wifi and other web pages can reach
 node scripts/lint-strings.mjs web/index.html web/js/*.js web/public/*.html README.md
 ```

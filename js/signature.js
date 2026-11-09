@@ -5,7 +5,7 @@
 import { data, save } from './store.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { uid, esc } from './util.js';
-import { linkUp, linkFetch } from './link.js';
+import { linkUp, linkFetch, linkOpenFrom, linkDownload } from './link.js';
 import qrcode from '../vendor/qrcode.mjs';
 
 const SCRIPT_FONTS = [
@@ -46,7 +46,7 @@ export function deleteSignature(id) {
 export function openSignatureModal(start = 'draw') {
   let mode = start;
   let font = SCRIPT_FONTS[0];
-  let imported = null;
+  let imported = null, importedHow = 'image';
   const strokes = [];
   const name = [data.profile.name].filter(Boolean).join('');
 
@@ -56,7 +56,7 @@ export function openSignatureModal(start = 'draw') {
       <div class="seg" role="tablist">
         <button class="seg-b" data-mode="draw">Draw</button>
         <button class="seg-b" data-mode="type">Type</button>
-        <button class="seg-b" data-mode="image">Photo of a signature</button>
+        <button class="seg-b" data-mode="image">Photo or file</button>
       </div>
       <div data-pane="draw">
         <canvas id="sig-pad" class="sig-pad"></canvas>
@@ -68,7 +68,7 @@ export function openSignatureModal(start = 'draw') {
         <div class="font-row">${SCRIPT_FONTS.map((f, i) => `<button class="font-pick${i ? '' : ' on'}" data-font="${i}" style="font-family:${f}">${esc(name || 'Signature')}</button>`).join('')}</div>
       </div>
       <div data-pane="image" hidden>
-        <p class="meta">Sign on white paper and take a photo. The paper is removed and the ink is kept.</p>
+        <p class="meta">A photo of your signature on white paper, where the paper is removed and the ink kept, or a signature file saved from Cygnus Rx on a phone or tablet.</p>
         <input type="file" id="sig-file" accept="image/*" class="field">
         <div class="type-preview" id="img-preview"></div>
       </div>
@@ -109,7 +109,8 @@ export function openSignatureModal(start = 'draw') {
   m.querySelector('#sig-file').onchange = async e => {
     const f = e.target.files[0];
     if (!f) return;
-    imported = await imageToTransparentPng(f);
+    const r = await readSignatureImage(f);
+    imported = r.src; importedHow = r.how;
     m.querySelector('#img-preview').innerHTML = `<img src="${imported}" style="max-height:120px" alt="">`;
   };
   m.querySelector('#sig-save').onclick = () => {
@@ -117,10 +118,10 @@ export function openSignatureModal(start = 'draw') {
     if (mode === 'draw') out = strokes.length ? trimCanvas(pad) : null;
     else if (mode === 'type') out = nameInput.value.trim() ? renderTypedSignature(nameInput.value.trim(), font) : null;
     else out = imported;
-    if (!out) { toast(mode === 'draw' ? 'Sign in the box first.' : mode === 'type' ? 'Type your name first.' : 'Choose a photo first.'); return; }
-    addSignature(out, mode);
+    if (!out) { toast(mode === 'draw' ? 'Sign in the box first.' : mode === 'type' ? 'Type your name first.' : 'Choose a photo or file first.'); return; }
+    addSignature(out, mode === 'image' ? importedHow : mode);
     closeModal();
-    toast('Signature saved.');
+    toast(touch() ? 'Signature saved. Save as file sends it to your computer.' : 'Signature saved.');
   };
 }
 
@@ -200,6 +201,43 @@ export function renderTypedSignature(text, fontCss, color = '#101010') {
   return trimCanvas(c, 10);
 }
 
+const touch = () => matchMedia('(pointer: coarse)').matches;
+
+// A signature as a PNG file: shared from a phone or tablet (Messenger, email,
+// AirDrop, Drive), downloaded on a computer.
+export async function exportSignature(sig) {
+  const blob = await (await fetch(sig.src)).blob();
+  const name = `Signature - ${data.profile.name || 'doctor'}.png`.replace(/[\\/:*?"<>|]/g, '');
+  const file = new File([blob], name, { type: 'image/png' });
+  if (touch() && navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+// A signature file from Cygnus Rx already has a clear background and is kept
+// as it is. A photo has its paper keyed out.
+export async function readSignatureImage(file) {
+  const src = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  const c = document.createElement('canvas');
+  const scale = Math.min(1, 1000 / img.width);
+  c.width = Math.round(img.width * scale);
+  c.height = Math.round(img.height * scale);
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  let clear = 0;
+  for (let i = 3; i < d.length; i += 16) if (d[i] < 250) clear++;
+  if (clear > d.length / 16 * 0.2) return { src: trimCanvas(c, 6), how: 'file' };
+  return { src: await imageToTransparentPng(file), how: 'image' };
+}
+
 // Keys out the white of the paper so a photographed signature sits on the
 // prescription as ink only.
 export function imageToTransparentPng(file) {
@@ -263,8 +301,9 @@ export async function openHandoff() {
     const m = openModal(`
       <div class="m-head"><h2>Sign on tablet</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
       <div class="m-body" style="max-width:460px">
-        <p style="margin-top:0">Signing on a tablet goes through Cygnus Rx Link on this computer. Open <b>Cygnus Rx Link</b> from the Start menu or the desktop, then press Try again.</p>
-        <p class="meta">Not installed yet? <a href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download Cygnus Rx Link for Windows</a>.</p>
+        <p style="margin-top:0">Signing on a tablet goes through Cygnus Rx Link on this computer. Open <b>Cygnus Rx Link</b> from ${linkOpenFrom()}, then press Try again.</p>
+        <p class="meta">Not installed yet? ${linkDownload()}.</p>
+        <p class="meta">No Link? Open Cygnus Rx on the tablet, sign there, press Save as file and send it here. Then pick it under Type, photo or file.</p>
         <p class="meta">If Chrome asks whether Cygnus Rx may look for devices on your network, click Allow.</p>
       </div>
       <div class="m-foot"><button class="btn-ghost" data-close>Cancel</button><button class="btn-primary" id="ho-retry">Try again</button></div>`);

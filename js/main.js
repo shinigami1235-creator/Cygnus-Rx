@@ -1,12 +1,12 @@
 // Cygnus Rx: the editor, the send step, history and the profile.
 
 import { data, load, save, storageOk, nextNumber, peekNumber, highestUsed, JSON_HEADERS } from './store.js';
-import { linkUp, linkFetch, linkPossible } from './link.js';
+import { linkUp, linkFetch, linkPossible, isMac, linkOpenFrom, linkDownload } from './link.js';
 import { folderPossible, folder, chooseFolder, forgetFolder, folderReady, savePdf, saveBackup } from './folder.js';
 import { loadFonts, layoutRx, PAPERS, medTitle, clean, hasContent, HEAD_ORDER } from './layout.js';
 import { drawPage, buildPdf, imageInfo } from './render.js';
 import { DRUGS, FORMS, ROUTES, DOSES, AREAS, FREQS, TIMING, DURATIONS, QTY_UNITS, routeForForm, knownRoute, buildSig } from './drugs.js';
-import { currentSig, openSignatureModal, openHandoff, useSignature, deleteSignature, qrSvg } from './signature.js';
+import { currentSig, openSignatureModal, openHandoff, exportSignature, useSignature, deleteSignature, qrSvg } from './signature.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { fmtDate, todayISO, addDays, uid, esc, slug, ageText } from './util.js';
 import { openPicker } from './picker.js';
@@ -142,6 +142,12 @@ function bindWrite() {
   $('#sig-tablet').onclick = () => openHandoff();
   $('#sig-draw').onclick = () => openSignatureModal('draw');
   $('#sig-more').onclick = () => openSignatureModal('type');
+  if (isMac) {
+    $('#dl-mac').className = 'btn-primary'; $('#dl-win').className = 'btn-ghost';
+    $('#link-dl').prepend($('#dl-mac'));
+    $('#dl-win-note').hidden = true;
+  } else if (/Win/.test(navigator.platform || navigator.userAgent)) $('#dl-mac-note').hidden = true;
+  $('#sig-export').onclick = () => { const c = currentSig(); c ? exportSignature(c) : toast('Sign first, then save it as a file.'); };
   $('#finish').onclick = finish;
   $('#m-finish').onclick = finish;
   $('#m-preview').onclick = () => { document.body.classList.add('preview-on'); refresh(); };
@@ -945,7 +951,7 @@ async function openSend(entry, bytes) {
   async function startShare() {
     box.textContent = 'Checking for Cygnus Rx Link';
     if (!(await linkUp())) {
-      box.innerHTML = '<p>To send by QR code, open <b>Cygnus Rx Link</b> from the Start menu or the desktop.</p><p class="meta">Not installed yet? <a href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download it for Windows</a>.</p><button class="btn-ghost sm" id="s-retry">Try again</button>';
+      box.innerHTML = `<p>To send by QR code, open <b>Cygnus Rx Link</b> from ${linkOpenFrom()}.</p><p class="meta">Not installed yet? ${linkDownload()}.</p><button class="btn-ghost sm" id="s-retry">Try again</button>`;
       $('#s-retry', m).onclick = startShare;
       return;
     }
@@ -1447,13 +1453,15 @@ function renderSigLib() {
   const cur = currentSig();
   box.innerHTML = data.sigs.map(s => `
     <div class="sig-card${s.id === cur?.id ? ' on' : ''}" data-id="${s.id}" title="Use this signature">
-      <img src="${esc(s.src)}" alt=""><span class="tag">${s.id === cur?.id ? 'In use' : { tablet: 'Tablet', draw: 'Drawn', type: 'Typed', image: 'Photo' }[s.how] || ''}</span>
+      <img src="${esc(s.src)}" alt=""><span class="tag">${s.id === cur?.id ? 'In use' : { tablet: 'Tablet', draw: 'Drawn', type: 'Typed', image: 'Photo', file: 'File' }[s.how] || ''}</span>
       <button class="del" data-del="${s.id}" title="Delete">×</button>
+      <button class="exp" data-exp="${s.id}">Save as file</button>
     </div>`).join('') + `<button class="btn-gold link-only" id="lib-tablet">Sign on tablet</button><button class="btn-ghost" id="lib-draw">Sign here, type or photo</button>`;
   box.onclick = e => {
     if (e.target.id === 'lib-tablet') return openHandoff();
     if (e.target.id === 'lib-draw') return openSignatureModal('draw');
     if (e.target.dataset.del) { if (confirm('Delete this signature? Prescriptions already signed with it keep it.')) deleteSignature(e.target.dataset.del); return; }
+    if (e.target.dataset.exp) return exportSignature(data.sigs.find(s => s.id === e.target.dataset.exp));
     const card = e.target.closest('.sig-card');
     if (card) useSignature(card.dataset.id);
   };

@@ -34,3 +34,10 @@ export async function linkFetch(path, opts = {}) {
   if (opts.body) init.headers = JSON_HEADERS;
   return fetch(linkBase() + path, init);
 }
+
+// Where Cygnus Rx Link is opened from, and its download, for this computer.
+export const isMac = /Mac/.test(navigator.platform || navigator.userAgent) && !('ontouchend' in document);
+export const linkOpenFrom = () => isMac ? 'Applications' : 'the Start menu or the desktop';
+export const linkDownload = () => isMac
+  ? '<a href="downloads/Cygnus-Rx-Link-Mac.zip" download>Download it for Mac</a>'
+  : '<a href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download it for Windows</a>';

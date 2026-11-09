@@ -122,7 +122,8 @@
         <div class="sig-acts">
           <button class="btn-gold link-only" id="sig-tablet">Sign on tablet</button>
           <button class="btn-ghost" id="sig-draw">Sign here</button>
-          <button class="btn-ghost" id="sig-more">Type or photo</button>
+          <button class="btn-ghost" id="sig-more">Type, photo or file</button>
+          <button class="btn-ghost touch-only" id="sig-export">Save as file</button>
         </div>
       </div>
     </div>
@@ -189,11 +190,13 @@
     </div>
     <div class="card link-only" id="link-card">
       <h2>Cygnus Rx Link</h2>
-      <p class="meta lh-lead">A small program on this computer for signing on a tablet and sending a prescription to a patient's phone by QR code. Install it once and open it only when you need it. It closes by itself when its window is closed.</p>
+      <p class="meta lh-lead">A small program on this computer for sending a prescription to a patient's phone by QR code over the clinic wifi, and for signing live on a tablet. You don't need it for anything else. A signature from a phone or tablet can come in as a file instead. Install it once and open it only when you need it.</p>
       <div class="row-gap" id="link-dl">
         <a class="btn-primary" id="dl-win" href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download for Windows</a>
+        <a class="btn-ghost" id="dl-mac" href="downloads/Cygnus-Rx-Link-Mac.zip" download>Download for Mac</a>
       </div>
-      <p class="meta" id="dl-win-note">If Windows says it protected your PC, click More info, then Run anyway, since the installer is not signed with a paid certificate. It installs without an administrator password and adds Cygnus Rx Link to the Start menu and the desktop.</p>
+      <p class="meta" id="dl-mac-note">Mac: open the zip and drag Cygnus Rx Link to Applications, then open it. When the Mac says it can't check the app, open System Settings, Privacy &amp; Security, scroll down and click Open Anyway. You only do this once, because the app isn't notarised by Apple. It runs from the menu bar.</p>
+      <p class="meta" id="dl-win-note">Windows: if it says it protected your PC, click More info, then Run anyway, since the installer is not signed with a paid certificate. It installs without an administrator password and adds Cygnus Rx Link to the Start menu and the desktop.</p>
     </div>
     <div class="card" id="lh-card">
       <h2>Letterhead</h2>
@@ -237,6 +240,7 @@
     </div>
     <div class="card">
       <h2>Saved signatures</h2>
+      <p class="meta lh-lead">Sign on a phone or tablet, then Save as file and send it to your computer by Messenger, email or AirDrop. On the computer, open Type, photo or file, choose Photo or file, and pick it.</p>
       <div class="sig-lib" id="sig-lib"></div>
     </div>
     <div class="card">
