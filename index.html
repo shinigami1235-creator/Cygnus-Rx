@@ -186,12 +186,30 @@
         <label class="f">Email<input data-p="email" placeholder="clinic@example.com"></label>
         <label class="f span2">Clinic hours<input data-p="hours" placeholder="Mon to Sat, 10am to 7pm"></label>
       </div>
-      <div class="logo-row">
-        <div class="logo-box" id="logo-box"></div>
-        <div><input type="file" id="logo-file" accept="image/*" hidden>
-          <button class="btn-ghost" id="logo-pick">Choose logo</button>
-          <button class="btn-ghost" id="logo-clear">Remove logo</button>
-          <p class="meta">A PNG with a clear background prints cleanest.</p></div>
+    </div>
+    <div class="card" id="lh-card">
+      <h2>Letterhead</h2>
+      <p class="meta lh-lead">The top of every prescription, request and certificate. Drag a logo to move it. The text keeps clear of logos on the left and right, and goes under a logo in the middle.</p>
+      <div class="lh-stage" id="lh-stage"><canvas id="lh-canvas"></canvas><div id="lh-logos"></div></div>
+      <div class="lh-logo-list" id="lh-logo-list"></div>
+      <div class="row-gap"><input type="file" id="logo-file" accept="image/*" multiple hidden>
+        <button class="btn-ghost" id="logo-pick">Add a logo</button>
+        <span class="meta">Up to 4, such as the clinic logo and society seals. A PNG with a clear background prints cleanest.</span></div>
+      <div class="grid g-2 lh-grid">
+        <label class="f">Text<select id="lh-align"><option value="center">Centred</option><option value="left">Left</option><option value="right">Right</option></select></label>
+        <label class="f">Name size<select id="lh-size"><option value="0.85">Small</option><option value="1">Medium</option><option value="1.2">Large</option></select></label>
+        <label class="f span2">Phone and email<select id="lh-labels"><option value="short">Tel. 0917 123 4567   clinic@example.com</option><option value="full">Contact Numbers: and Email Address: in bold, one line each</option></select></label>
+      </div>
+      <label class="check"><input type="checkbox" id="lh-caps"> Name and specialty in capitals</label>
+      <h3 class="lh-h3">Lines, in order</h3>
+      <div class="lh-lines" id="lh-lines"></div>
+      <h3 class="lh-h3">Clinic schedule</h3>
+      <p class="meta">For a doctor at more than one clinic. Each clinic prints in bold with its days and hours under it.</p>
+      <div id="lh-sched"></div>
+      <button class="btn-ghost sm" id="lh-sched-add">+ Add a clinic</button>
+      <div class="grid g-2 lh-grid">
+        <label class="f">Heading<input id="lh-sched-title" placeholder="Clinic Schedule:"></label>
+        <label class="f">Layout<select id="lh-sched-layout"><option value="stacked">One under another</option><option value="columns">Side by side</option></select></label>
       </div>
     </div>
     <div class="card">

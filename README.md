@@ -84,6 +84,25 @@ The catalog holds 123 laboratory tests in 12 categories, 112 imaging parts
 across X-ray, ultrasound, CT, MRI and mammography, and 15 other tests such as
 ECG, 2D echo and spirometry. It lives in `web\js\tests.js`.
 
+## Letterhead
+
+Doctor and clinic has a Letterhead card with a live preview of the top of the
+page. Add a logo puts in up to 4 images, such as a clinic logo and society
+seals: the first goes on the left, the second on the right. Drag a logo on the
+preview to move it, use the Size slider, or Left, Middle and Right to put it
+back on a margin. The text keeps clear of logos on the left and right and goes
+under a logo in the middle, and a long name goes on two lines rather than run
+under a logo.
+
+The text can be centred, left or right, with the name small, medium or large,
+the name and specialty in capitals, and the phone and email as one short line
+or as Contact Numbers: and Email Address: in bold. Each line can be hidden or
+moved up and down. Clinic schedule lists each clinic in bold with its days and
+hours under it, one under another or side by side.
+
+A prescription already issued keeps the letterhead it was printed with. The
+single logo of older versions becomes the first logo, with the text beside it.
+
 ## Medicines not on the list
 
 Typing in Generic name opens a list of matching medicines from the starter

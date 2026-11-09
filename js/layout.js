@@ -86,6 +86,9 @@ export function medTitle(m) {
   return [m.generic, m.strength, m.form].map(s => (s || '').trim()).filter(Boolean).join(' ');
 }
 
+// The letterhead lines in their default order. The name is always first.
+export const HEAD_ORDER = ['name', 'specialty', 'clinic', 'address', 'phone', 'email', 'hours', 'schedule'];
+
 // profile: doctor and clinic. rx: patient, items, notes and dates.
 // images: { logo: {src,w,h}, sig: {src,w,h} } with natural pixel sizes.
 function build(rx, profile, images, scale) {
@@ -113,7 +116,119 @@ function build(rx, profile, images, scale) {
   const line = (x1, y1, x2, y2, w = 0.6, color = '#9aa1ab') => ops.push({ t: 'line', x1, y1, x2, y2, w, color });
 
   // ── header, drawn on every page ────────────────────────────────
+  // profile.head is the letterhead built in Doctor and clinic. A prescription
+  // issued before it existed has no head and keeps the old header.
   function header() {
+    const hb = profile.head ? letterhead(profile.head) : oldHeader();
+    pages.at(-1).headBottom = hb;
+    return hb;
+  }
+
+  // Draws one line of parts [[text, font]], aligned on x.
+  function rich(x, yy, parts, size, color, align) {
+    parts = parts.map(([s, f]) => [clean(s, f), f]).filter(([s]) => s);
+    const total = parts.reduce((t, [s, f]) => t + width(s, f, size), 0);
+    let xx = align === 'right' ? x - total : align === 'center' ? x - total / 2 : x;
+    for (const [s, f] of parts) { ops.push({ t: 'text', x: xx, y: yy, s, font: f, size, color }); xx += width(s, f, size); }
+  }
+
+  function letterhead(h) {
+    const top = M;
+    // logos: x is the centre as a share of the page width, y and h are in
+    // points of an A5 page, so a letterhead keeps its look on every paper size
+    const logos = (h.logos || []).map(l => {
+      const im = images[l.key];
+      if (!im || !im.w || !im.h) return null;
+      let lh = (l.h || 48) * k, lw = lh * im.w / im.h;
+      if (lw > 150 * k) { lw = 150 * k; lh = lw * im.h / im.w; }
+      const x = Math.max(6 * k, Math.min(W - 6 * k - lw, (l.x ?? 0.12) * W - lw / 2));
+      return { key: l.key, x, y: top + (l.y || 0) * k, w: lw, h: lh };
+    }).filter(Boolean);
+    for (const l of logos) ops.push({ t: 'img', key: l.key, x: l.x, y: l.y, w: l.w, h: l.h, logo: true });
+
+    // the text keeps clear of logos on the left and right, and goes under a
+    // logo placed in the middle
+    let left = M, right = W - M, textTop = top;
+    for (const l of logos) {
+      const c = l.x + l.w / 2;
+      if (c < W * 0.36) left = Math.max(left, l.x + l.w + 8 * k);
+      else if (c > W * 0.64) right = Math.min(right, l.x - 8 * k);
+      else textTop = Math.max(textTop, l.y + l.h + 2 * k);
+    }
+    if (right - left < CW * 0.4) { left = M; right = W - M; }
+    const tw = right - left;
+    const al = h.align || 'center';
+    const ax = al === 'left' ? left : al === 'right' ? right : (left + right) / 2;
+    const full = h.labels === 'full';
+    const caps = s => h.caps ? s.toUpperCase() : s;
+    const hidden = h.hidden || {};
+    const order = h.order || HEAD_ORDER;
+
+    let ty = textTop;
+    const nameSize = 13 * k * (h.nameSize || 1);
+    const name = caps([profile.name, profile.suffix].filter(Boolean).join(', ') || 'Doctor name');
+    // a long name gets smaller type, and past a fifth smaller goes on two lines
+    // rather than run under a logo
+    let ns = nameSize, nameLines = [name];
+    while (width(clean(name, 'bold'), 'bold', ns) > tw && ns > nameSize * 0.8) ns -= 0.25;
+    if (width(clean(name, 'bold'), 'bold', ns) > tw) { ns = nameSize * 0.85; nameLines = wrap(name, 'bold', ns, tw); }
+    nameLines.forEach((l, i) => { ty += i ? ns * 1.15 : ns * 0.95; text(ax, ty, l, 'bold', ns, accent, al); });
+    ty += 2 * k;
+
+    const put = (parts, size, color = ink) => {
+      ty += size * 1.2;
+      rich(ax, ty, parts, size, color, al);
+    };
+    const shown = order.filter(key => key !== 'name' && !hidden[key]);
+    for (let i = 0; i < shown.length; i++) {
+      const key = shown[i];
+      if (key === 'specialty' && profile.specialty) put([[caps(profile.specialty), h.caps ? 'bold' : 'reg']], 8.5 * k);
+      else if (key === 'clinic' && profile.clinic) put([[profile.clinic, 'bold']], 8 * k);
+      else if (key === 'address' && profile.address) for (const l of wrap(profile.address, 'reg', 7.5 * k, tw)) put([[l, 'reg']], 7.5 * k, soft);
+      else if (key === 'phone' && profile.phone) {
+        if (full) put([['Contact Numbers: ', 'bold'], [profile.phone, 'reg']], 8 * k);
+        else if (shown[i + 1] === 'email' && profile.email) { put([['Tel. ' + profile.phone + '   ' + profile.email, 'reg']], 7.5 * k, soft); i++; }
+        else put([['Tel. ' + profile.phone, 'reg']], 7.5 * k, soft);
+      }
+      else if (key === 'email' && profile.email) put(full ? [['Email Address: ', 'bold'], [profile.email, 'reg']] : [[profile.email, 'reg']], full ? 8 * k : 7.5 * k, full ? ink : soft);
+      else if (key === 'hours' && profile.hours) put(full ? [['Clinic Hours: ', 'bold'], [profile.hours, 'reg']] : [[profile.hours, 'reg']], 7.5 * k, full ? ink : soft);
+      else if (key === 'schedule') ty = schedule(h, ty, left, tw);
+    }
+    const logoBottom = Math.max(0, ...logos.map(l => l.y + l.h));
+    const bottom = Math.max(ty + 4 * k, logoBottom + 2 * k) + 4 * k;
+    line(M, bottom, W - M, bottom, 1.4 * k, accent);
+    return bottom;
+  }
+
+  // Clinic schedule: each clinic in bold with its days and hours under it,
+  // one under another or side by side in columns.
+  function schedule(h, ty, left, tw) {
+    const places = (h.schedule || []).filter(c => (c.place || '').trim() || (c.times || '').trim());
+    if (!places.length) return ty;
+    const fs = 7.5 * k, lh = 9 * k;
+    ty += 5 * k;
+    if (h.schedTitle !== '') { ty += lh; text(left, ty, h.schedTitle || 'Clinic Schedule:', 'bold', fs, ink); }
+    const block = (c, x, w, y0) => {
+      let yy = y0;
+      if (c.place) for (const l of wrap(c.place, 'bold', fs, w)) { yy += lh; text(x, yy, l, 'bold', fs, ink); }
+      for (const t of (c.times || '').split('\n')) for (const l of wrap(t, 'reg', fs, w)) { if (!l) continue; yy += lh; text(x, yy, l, 'reg', fs, ink); }
+      return yy;
+    };
+    if (h.schedLayout === 'columns') {
+      const n = Math.min(places.length, 3);
+      const cw = tw / n;
+      let rowTop = ty;
+      for (let r = 0; r < places.length; r += n) {
+        const ends = places.slice(r, r + n).map((c, i) => block(c, left + i * cw, cw - 8 * k, rowTop));
+        rowTop = Math.max(...ends) + 3 * k;
+      }
+      return rowTop - 3 * k;
+    }
+    for (const c of places) ty = block(c, left, tw, ty) + 1.5 * k;
+    return ty - 1.5 * k;
+  }
+
+  function oldHeader() {
     let top = M;
     let tx = M;
     const logo = images.logo;
@@ -190,7 +305,10 @@ function build(rx, profile, images, scale) {
     line(bx, lineY, bx + bw, lineY, 0.7, '#333');
     let yy = lineY + 11.5 * k;
     const name = [profile.name, profile.suffix].filter(Boolean).join(', ') || 'Doctor name';
-    text(bx + bw / 2, yy, name, 'bold', 8.5 * k, ink, 'center');
+    // a long name and titles get smaller type to stay inside the signature block
+    let nsz = 8.5 * k;
+    while (width(clean(name, 'bold'), 'bold', nsz) > bw && nsz > 6 * k) nsz -= 0.25;
+    text(bx + bw / 2, yy, name, 'bold', nsz, ink, 'center');
     yy += 9.5 * k;
     const lic = [
       profile.prc && ['PRC Lic. No.', profile.prc],

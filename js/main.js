@@ -3,7 +3,7 @@
 import { data, load, save, storageOk, nextNumber, peekNumber, highestUsed, JSON_HEADERS } from './store.js';
 import { linkUp, linkFetch, linkPossible } from './link.js';
 import { folderPossible, folder, chooseFolder, forgetFolder, folderReady, savePdf, saveBackup } from './folder.js';
-import { loadFonts, layoutRx, PAPERS, medTitle, clean, hasContent } from './layout.js';
+import { loadFonts, layoutRx, PAPERS, medTitle, clean, hasContent, HEAD_ORDER } from './layout.js';
 import { drawPage, buildPdf, imageInfo } from './render.js';
 import { DRUGS, FORMS, ROUTES, DOSES, AREAS, FREQS, TIMING, DURATIONS, QTY_UNITS, routeForForm, buildSig } from './drugs.js';
 import { currentSig, openSignatureModal, openHandoff, useSignature, deleteSignature, qrSvg } from './signature.js';
@@ -45,6 +45,7 @@ function draftFrom(saved) {
 async function boot() {
   await Promise.all([load(), loadFonts()]);
   data.archive ||= {};
+  moveLogo();
   draft = draftFrom(data.draft);
   if (!storageOk) $('#bar-status').textContent = 'This browser is not letting Cygnus Rx save. Open it in Chrome, Edge or Safari outside private browsing.';
   document.body.classList.toggle('no-link', !linkPossible());
@@ -681,9 +682,13 @@ function refresh() {
   refreshTimer = setTimeout(drawPreview, 60);
 }
 
-async function imagesFor(sigSrc, logoSrc = data.profile.logo) {
-  const [logo, sig] = await Promise.all([imageInfo(logoSrc), imageInfo(sigSrc)]);
-  return { logo, sig };
+// The signature and the letterhead's logos, by the keys the layout uses.
+async function imagesFor(sigSrc, profile = data.profile) {
+  const keys = (profile.head?.logos || []).map(l => l.key);
+  const [logo, sig, ...logos] = await Promise.all([imageInfo(profile.logo), imageInfo(sigSrc), ...keys.map(k => imageInfo(data.archive[k]))]);
+  const out = { logo, sig };
+  keys.forEach((k, i) => { out[k] = logos[i]; });
+  return out;
 }
 
 function rxFromDraft(no) {
@@ -769,7 +774,7 @@ async function finish() {
       prepEdits: { ...draft.prepEdits }, prepExtra: [...draft.prepExtra],
       cert: draft.cert && draft.cert.text.trim() ? { ...draft.cert } : null,
       signed, sigId: signed ? sig.id : null, logoKey,
-      profile: { ...data.profile, logo: undefined },
+      profile: JSON.parse(JSON.stringify({ ...data.profile, logo: undefined })),
       sent: [],
     };
     entry.file = `${entry.date} ${entry.no} ${slug(entry.patient.name)}.pdf`;
@@ -830,7 +835,7 @@ function upsertPatient(p) {
 async function pdfFor(entry) {
   const profile = profileOf(entry);
   const sigSrc = entry.signed ? (data.archive[entry.sigId] || data.sigs.find(s => s.id === entry.sigId)?.src) : null;
-  const images = await imagesFor(sigSrc, profile.logo);
+  const images = await imagesFor(sigSrc, profile);
   const pages = layoutRx(entry, profile, images);
   const doctor = [profile.name, profile.suffix].filter(Boolean).join(', ');
   return buildPdf(pages, images, { title: `${docName(entry)} ${entry.no}, ${entry.patient.name}`, author: doctor, subject: `${docName(entry)} for ${entry.patient.name}, ${fmtDate(entry.date)}` });
@@ -1073,7 +1078,7 @@ async function openEntry(h) {
     </div></div>`);
   const profile = profileOf(h);
   const sigSrc = h.signed ? (data.archive[h.sigId] || null) : null;
-  const images = await imagesFor(sigSrc, profile.logo);
+  const images = await imagesFor(sigSrc, profile);
   for (const p of layoutRx(h, profile, images)) {
     const c = document.createElement('canvas');
     $('#h-pages', m).appendChild(c);
@@ -1100,6 +1105,7 @@ function bindProfile() {
     el.addEventListener(ev, () => {
       data.profile[el.dataset.p] = el.type === 'checkbox' ? el.checked : el.value;
       save();
+      headPreview();
       if (el.dataset.p === 'name' && el.value) $('#first-run').hidden = true;
     });
   });
@@ -1143,13 +1149,7 @@ function bindProfile() {
     renderPrepEdit();
   });
   $('#folder-forget').onclick = async () => { await forgetFolder(); renderFolder(); };
-  $('#logo-file').onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    data.profile.logo = await shrinkImage(f, 600);
-    save(); renderLogo();
-  };
-  $('#logo-clear').onclick = () => { delete data.profile.logo; save(); renderLogo(); };
+  bindHead();
   $('#backup').onclick = () => {
     download(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }), `Cygnus Rx backup ${todayISO()}.json`);
   };
@@ -1166,6 +1166,7 @@ function bindProfile() {
       Object.assign(data, incoming, { rev });
       data.archive ||= {};
       await save(true);
+      moveLogo();
       mode = 'rx'; document.body.classList.remove('cert-mode');
       draft = draftFrom(data.draft);
       fillProfile();
@@ -1189,7 +1190,7 @@ function fillProfile() {
   $$('.swatch').forEach(s => s.classList.toggle('on', s.dataset.c === (data.profile.accent || '#101C2B')));
   renderFolder();
   renderPrepEdit();
-  renderLogo();
+  renderHead();
   renderSigLib();
 }
 
@@ -1219,8 +1220,209 @@ function renderPrepEdit() {
   $$('#prep-edit textarea').forEach(fitArea);
 }
 
-function renderLogo() {
-  $('#logo-box').innerHTML = data.profile.logo ? `<img src="${data.profile.logo}" alt="Clinic logo">` : 'No logo';
+// ── letterhead ─────────────────────────────────────────────────
+// profile.head: { align, nameSize, caps, labels, order, hidden, logos, schedule,
+// schedTitle, schedLayout }. Logos live in data.archive by key, so an issued
+// prescription still finds the logo it was printed with.
+
+const HEAD_NAMES = { name: 'Name', specialty: 'Specialty', clinic: 'Clinic name', address: 'Address', phone: 'Phone', email: 'Email', hours: 'Clinic hours', schedule: 'Clinic schedule' };
+
+function blankHead() {
+  return { align: 'center', nameSize: 1, caps: false, labels: 'short', order: [...HEAD_ORDER], hidden: {}, logos: [], schedule: [], schedLayout: 'stacked' };
+}
+function head() {
+  const h = (data.profile.head ||= blankHead());
+  h.order = [...h.order.filter(k => HEAD_ORDER.includes(k)), ...HEAD_ORDER.filter(k => !h.order.includes(k))];
+  return h;
+}
+
+// The single logo of older versions becomes the first logo of the letterhead,
+// on the left with the text beside it, as it printed before.
+function moveLogo() {
+  if (!data.profile.logo || data.profile.head) return;
+  const key = 'logo:' + hash(data.profile.logo);
+  data.archive[key] = data.profile.logo;
+  data.profile.head = { ...blankHead(), align: 'left', logos: [{ key, x: 0.15, y: 0, h: 48 }] };
+  delete data.profile.logo;
+  save();
+}
+
+// x of a logo's centre for Left and Right, from its shape: 26 points of margin
+// on a 420 point wide page, whatever the paper.
+async function edgeX(l, side) {
+  const im = await imageInfo(data.archive[l.key]);
+  const w = Math.min((l.h || 48) * (im ? im.w / im.h : 1), 150);
+  return side === 'left' ? (26 + w / 2) / 420 : side === 'right' ? 1 - (26 + w / 2) / 420 : 0.5;
+}
+
+let headTimer;
+function headPreview() {
+  clearTimeout(headTimer);
+  headTimer = setTimeout(drawHead, 40);
+}
+
+let headDrag = false;
+async function drawHead() {
+  const stage = $('#lh-stage');
+  if (!stage || $('#view-profile').hidden || headDrag) return;
+  const profile = { ...data.profile, head: data.profile.head || blankHead() };
+  const images = await imagesFor(null, profile);
+  const [page] = layoutRx({ patient: {}, items: [], tests: [], date: todayISO(), notes: '' }, profile, images);
+  const cw = stage.clientWidth || 600;
+  const scale = cw / page.w;
+  // logos are drawn as pieces you can drag, so the canvas leaves them out
+  const plain = { ...images };
+  for (const l of profile.head.logos) delete plain[l.key];
+  drawPage($('#lh-canvas'), page, plain, cw);
+  stage.style.height = Math.round((page.headBottom + 10 * page.w / 420) * scale) + 'px';
+  $('#lh-logos').innerHTML = page.ops.filter(o => o.logo).map(o => {
+    const i = profile.head.logos.findIndex(l => l.key === o.key);
+    return `<div class="lh-logo" data-i="${i}" style="left:${o.x * scale}px;top:${o.y * scale}px;width:${o.w * scale}px;height:${o.h * scale}px"><img src="${images[o.key].src}" alt="" draggable="false"></div>`;
+  }).join('');
+  stage.dataset.scale = scale;
+  stage.dataset.pw = page.w;
+}
+
+function renderHead() {
+  const h = data.profile.head || blankHead();
+  $('#lh-align').value = h.align || 'center';
+  $('#lh-size').value = String(h.nameSize || 1);
+  $('#lh-labels').value = h.labels || 'short';
+  $('#lh-caps').checked = !!h.caps;
+  $('#lh-sched-title').value = h.schedTitle ?? '';
+  $('#lh-sched-layout').value = h.schedLayout || 'stacked';
+  $('#logo-pick').disabled = h.logos.length >= 4;
+  $('#lh-logo-list').innerHTML = h.logos.map((l, i) => `
+    <div class="lh-logo-row" data-i="${i}">
+      <img src="${data.archive[l.key] || ''}" alt="Logo ${i + 1}">
+      <label class="lh-size">Size<input type="range" min="20" max="90" step="2" value="${l.h || 48}" data-a="size" aria-label="Size of logo ${i + 1}"></label>
+      <div class="seg"><button class="btn-ghost sm" data-a="left">Left</button><button class="btn-ghost sm" data-a="middle">Middle</button><button class="btn-ghost sm" data-a="right">Right</button></div>
+      <button class="btn-ghost sm" data-a="remove">Remove</button>
+    </div>`).join('');
+  const order = h.order || HEAD_ORDER;
+  $('#lh-lines').innerHTML = order.map((k, i) => `
+    <div class="lh-line" data-k="${k}">
+      <label class="check">${k === 'name' ? '<input type="checkbox" checked disabled>' : `<input type="checkbox" data-a="show" ${h.hidden?.[k] ? '' : 'checked'}>`} ${HEAD_NAMES[k]}</label>
+      <span><button class="icon-btn" data-a="up" aria-label="Move ${HEAD_NAMES[k]} up" ${i <= 1 || k === 'name' ? 'disabled' : ''}>↑</button><button class="icon-btn" data-a="down" aria-label="Move ${HEAD_NAMES[k]} down" ${i === order.length - 1 || k === 'name' ? 'disabled' : ''}>↓</button></span>
+    </div>`).join('');
+  $('#lh-sched').innerHTML = (h.schedule || []).map((c, i) => `
+    <div class="lh-clinic" data-i="${i}">
+      <label class="f">Clinic or hospital<input data-c="place" value="${esc(c.place || '')}" placeholder="Asia Pacific Medical Center"></label>
+      <label class="f">Days and hours<textarea class="field" data-c="times" rows="2" placeholder="MWF: 2 - 5 PM">${esc(c.times || '')}</textarea></label>
+      <button class="icon-btn" data-a="del" aria-label="Remove this clinic">×</button>
+    </div>`).join('');
+  headPreview();
+}
+
+function bindHead() {
+  // a click saves straight away; typing waits for a pause
+  const changed = (redraw = true) => { save(redraw); if (redraw) renderHead(); else headPreview(); };
+  $('#logo-file').onchange = async e => {
+    const h = head();
+    for (const f of [...e.target.files].slice(0, 4 - h.logos.length)) {
+      const src = await shrinkImage(f, 600);
+      const key = 'logo:' + hash(src);
+      data.archive[key] = src;
+      if (h.logos.some(l => l.key === key)) continue;
+      const l = { key, y: 0, h: 48 };
+      const sides = await Promise.all(h.logos.map(o => o.x < 0.36 ? 'left' : o.x > 0.64 ? 'right' : 'middle'));
+      l.x = await edgeX(l, !sides.includes('left') ? 'left' : !sides.includes('right') ? 'right' : 'middle');
+      h.logos.push(l);
+    }
+    e.target.value = '';
+    changed();
+  };
+  $('#lh-logo-list').addEventListener('click', async e => {
+    const a = e.target.dataset.a;
+    const row = e.target.closest('.lh-logo-row');
+    if (!a || !row || a === 'size') return;
+    const h = head(), l = h.logos[+row.dataset.i];
+    if (a === 'remove') h.logos.splice(+row.dataset.i, 1);
+    else { l.x = await edgeX(l, a); l.y = 0; }
+    changed();
+  });
+  $('#lh-logo-list').addEventListener('input', e => {
+    if (e.target.dataset.a !== 'size') return;
+    head().logos[+e.target.closest('.lh-logo-row').dataset.i].h = +e.target.value;
+    changed(false);
+  });
+  $('#lh-align').onchange = e => { head().align = e.target.value; changed(false); };
+  $('#lh-size').onchange = e => { head().nameSize = +e.target.value; changed(false); };
+  $('#lh-labels').onchange = e => { head().labels = e.target.value; changed(false); };
+  $('#lh-caps').onchange = e => { head().caps = e.target.checked; changed(false); };
+  $('#lh-sched-title').oninput = e => { head().schedTitle = e.target.value; changed(false); };
+  $('#lh-sched-layout').onchange = e => { head().schedLayout = e.target.value; changed(false); };
+  $('#lh-lines').addEventListener('click', e => {
+    const a = e.target.dataset.a;
+    if (a !== 'up' && a !== 'down') return;
+    const h = head(), k = e.target.closest('.lh-line').dataset.k;
+    const i = h.order.indexOf(k), j = a === 'up' ? i - 1 : i + 1;
+    if (j < 1 || j >= h.order.length) return;
+    [h.order[i], h.order[j]] = [h.order[j], h.order[i]];
+    changed();
+    $(`#lh-lines [data-k="${k}"] [data-a="${a}"]`)?.focus();
+  });
+  $('#lh-lines').addEventListener('change', e => {
+    if (e.target.dataset.a !== 'show') return;
+    const h = head(), k = e.target.closest('.lh-line').dataset.k;
+    h.hidden = { ...h.hidden, [k]: !e.target.checked };
+    changed(false);
+  });
+  $('#lh-sched-add').onclick = () => {
+    head().schedule.push({ place: '', times: '' });
+    changed();
+    $('#lh-sched .lh-clinic:last-child input')?.focus();
+  };
+  $('#lh-sched').addEventListener('input', e => {
+    const c = e.target.dataset.c;
+    if (!c) return;
+    head().schedule[+e.target.closest('.lh-clinic').dataset.i][c] = e.target.value;
+    if (e.target.tagName === 'TEXTAREA') fitArea(e.target);
+    changed(false);
+  });
+  $('#lh-sched').addEventListener('click', e => {
+    if (e.target.dataset.a !== 'del') return;
+    head().schedule.splice(+e.target.closest('.lh-clinic').dataset.i, 1);
+    changed();
+  });
+
+  // drag a logo on the preview; it snaps to the margins, the middle and the top
+  const stage = $('#lh-stage');
+  stage.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.lh-logo');
+    if (!el) return;
+    e.preventDefault();
+    headDrag = true;
+    const idx = +el.dataset.i;
+    const sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop;
+    const scale = +stage.dataset.scale, pw = +stage.dataset.pw, kk = pw / 420;
+    const margin = 26 * kk * scale, w = el.offsetWidth;
+    let nx = ox, ny = oy;
+    el.classList.add('drag');
+    const move = ev => {
+      nx = ox + ev.clientX - sx; ny = oy + ev.clientY - sy;
+      for (const t of [margin, stage.clientWidth / 2 - w / 2, stage.clientWidth - margin - w]) if (Math.abs(nx - t) < 8) nx = t;
+      if (Math.abs(ny - margin) < 6) ny = margin;
+      nx = Math.max(0, Math.min(stage.clientWidth - w, nx));
+      ny = Math.max(0, ny);
+      el.style.left = nx + 'px'; el.style.top = ny + 'px';
+    };
+    const up = () => {
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', up);
+      el.classList.remove('drag');
+      headDrag = false;
+      const l = head().logos[idx];
+      l.x = Math.round(((nx + w / 2) / stage.clientWidth) * 1000) / 1000;
+      l.y = Math.max(-20, Math.min(120, Math.round((ny / scale / kk - 26) * 10) / 10));
+      save(true); headPreview();
+    };
+    addEventListener('pointermove', move);
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', up);
+  });
+  addEventListener('resize', headPreview);
 }
 
 function renderSigLib() {
