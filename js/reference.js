@@ -30,12 +30,20 @@ const cap = (s) => s.replace(/^./, c => c.toUpperCase());
 const tagName = (t) => TAG_NAMES[t] || (INFO[t] ? t : t);
 
 // The route of the first starter form, so a cream opens the cream's card.
+// An entry with skin notes as its extra part (metronidazole, clindamycin)
+// opens on the tablet; one with tablet notes as its extra part (minoxidil)
+// opens on the cream.
 function routeOf(key) {
+  const i = INFO[key];
+  if (i?.topical) return 'oral';
+  if (i?.oral) return 'topical';
   return DRUGS.find(d => d.g.toLowerCase() === key)?.r || 'oral';
 }
 
-function forms(key) {
-  return [...new Set(DRUGS.filter(d => d.g.toLowerCase() === key).map(d => d.f))];
+// The forms of this medicine taken the same way as the card shows.
+function forms(key, byMouth) {
+  const local = r => ['topical', 'vaginal', 'eye', 'ear'].includes(r);
+  return [...new Set(DRUGS.filter(d => d.g.toLowerCase() === key && (byMouth === undefined || local(d.r) !== byMouth)).map(d => d.f))];
 }
 
 export function coverChips(cover) {
@@ -66,14 +74,14 @@ export function openAbout(generic, route, onAdd, onBack) {
   const line = (title, v) => v ? `<h3>${title}</h3><p>${esc(v)}</p>` : '';
   const lvl = (title, v) => v ? `<h3>${title}</h3><p><span class="lvl ${v[0]}">${LEVEL[v[0]]}</span> ${esc(v[1])}</p>` : '';
   const inter = interactionsOf(info);
-  const f = forms(info.key);
+  const f = forms(info.key, !['topical', 'vaginal', 'eye', 'ear'].includes(route));
   const raw = INFO[info.key];
   const byMouth = !['topical', 'vaginal', 'eye', 'ear'].includes(route);
-  const other = raw.oral ? (byMouth ? 'topical' : 'oral') : null;
+  const other = raw.oral || raw.topical ? (byMouth ? 'topical' : 'oral') : null;
   const m = openModal(`
     <div class="m-head"><h2>${esc(cap(info.key))}</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
     <div class="m-body about">
-      <p class="about-cls">${esc(info.cls)}${f.length && !(raw.oral && byMouth) ? ' &middot; ' + esc(f.join(', ')) : ''}${info.s2 ? ' <span class="lvl avoid">S2</span>' : ''}</p>
+      <p class="about-cls">${esc(info.cls)}${f.length ? ' &middot; ' + esc(f.join(', ')) : ''}${info.s2 ? ' <span class="lvl avoid">S2</span>' : ''}</p>
       ${info.boxed ? `<p class="boxed"><b>Boxed warning.</b> ${esc(info.boxed)}</p>` : ''}
       ${info.cover ? `<h3>Coverage</h3>${coverChips(info.cover)}<p class="meta">Dark: reliable. Light: some, or resistance is common. Grey: none.</p>` : ''}
       ${line('Organisms', info.bugs)}${line('Viruses', info.virus)}${line('Fungi', info.fungi)}${line('Parasites', info.parasites)}

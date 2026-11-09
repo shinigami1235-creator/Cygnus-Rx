@@ -262,7 +262,7 @@ function medCard(m, i) {
     <div class="grid g-med1">
       <div class="gen-wrap"><label class="f">Generic name <input data-k="generic" value="${esc(m.generic)}" placeholder="Tretinoin" autocomplete="off" role="combobox" aria-autocomplete="list"></label><div class="gen-pop" hidden></div></div>
       <label class="f">Strength<input data-k="strength" list="str-${m.id}" value="${esc(m.strength)}" placeholder="0.025%"><datalist id="str-${m.id}">${strengths.map(s => `<option value="${esc(s)}">`).join('')}</datalist></label>
-      <label class="f">Form<input data-k="form" list="form-list" value="${esc(m.form)}" placeholder="cream"></label>
+      <label class="f">Form<input data-k="form" list="forms-${m.id}" value="${esc(m.form)}" placeholder="cream"><datalist id="forms-${m.id}">${formOptions(m.generic)}</datalist></label>
     </div>
     <div class="grid g-med2">
       <label class="f">Brand, optional<input data-k="brand" value="${esc(m.brand)}" placeholder="Retin-A"></label>
@@ -573,6 +573,13 @@ function openNewDrug(name, onSave) {
   };
 }
 
+// The Form box lists this medicine's own forms first, then every other form.
+function formOptions(generic) {
+  const g = (generic || '').trim().toLowerCase();
+  const own = [...new Set(allDrugs().filter(d => d.g.toLowerCase() === g).map(d => d.f))];
+  return [...own, ...FORMS.filter(f => !own.includes(f))].map(f => `<option value="${esc(f)}">`).join('');
+}
+
 // Choosing a generic from the list fills form, strength and route when they
 // are still empty. A name sold in several forms (acyclovir cream and tablet)
 // fills nothing until the form is typed, and a strength filled in this way is
@@ -590,10 +597,15 @@ function pickDrug(m, card, changedKey) {
     if (!m.qtyUnit && d.u) m.qtyUnit = d.u;
   } else if (changedKey === 'form' && !m.dose && !m.freq) {
     m.route = routeForForm(m.form);
+  } else if (changedKey === 'generic' && matches.length && !m.dose && !m.freq && new Set(matches.map(x => x.r)).size === 1) {
+    // every form goes the same way (tretinoin cream and gel), so the route is known
+    m.route = matches[0].r;
   }
   if (!m.sigEdited) m.sig = buildSig(m);
   if (JSON.stringify([m.form, m.strength, m.route, m.qtyUnit]) !== before) { rerenderCard(card, m); return; }
   const strengths = d ? d.s : [...new Set(matches.flatMap(x => x.s))];
+  const fl = card.querySelector(`#forms-${m.id}`);
+  if (fl && changedKey === 'generic') fl.innerHTML = formOptions(m.generic);
   const list = card.querySelector(`#str-${m.id}`);
   if (list) list.innerHTML = strengths.filter(Boolean).map(x => `<option value="${esc(x)}">`).join('');
 }
