@@ -945,7 +945,7 @@ async function openSend(entry, bytes) {
   async function startShare() {
     box.textContent = 'Checking for Cygnus Rx Link';
     if (!(await linkUp())) {
-      box.innerHTML = '<p>To send by QR code, open <b>Cygnus Rx Link</b> on this computer.</p><button class="btn-ghost sm" id="s-retry">Try again</button>';
+      box.innerHTML = '<p>To send by QR code, open <b>Cygnus Rx Link</b> from the Start menu or the desktop.</p><p class="meta">Not installed yet? <a href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download it for Windows</a>.</p><button class="btn-ghost sm" id="s-retry">Try again</button>';
       $('#s-retry', m).onclick = startShare;
       return;
     }
@@ -1507,3 +1507,19 @@ $('#install').onclick = async () => {
   $('#install').hidden = true;
 };
 addEventListener('appinstalled', () => { $('#install').hidden = true; });
+
+const ua = navigator.userAgent;
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const safari = /Safari\//.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\//.test(ua);
+const apple = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+if (safari && !standalone) {
+  $('#install').hidden = false;
+  $('#install').onclick = () => openModal(`
+    <div class="m-head"><h2>Install Cygnus Rx</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
+    <div class="m-body" style="max-width:440px">
+      ${apple
+        ? '<ol class="steps"><li>Tap the Share button at the bottom of Safari, the square with an arrow.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p class="meta">Cygnus Rx then opens from the home screen in its own window and works offline.</p>'
+        : '<ol class="steps"><li>In the menu bar, click <b>File</b>.</li><li>Click <b>Add to Dock</b>, then <b>Add</b>.</li></ol><p class="meta">Cygnus Rx then opens from the Dock and Launchpad in its own window and works offline. Add to Dock needs macOS Sonoma (14) or newer. On an older Mac, use Chrome or Edge, which show an Install button here.</p>'}
+    </div>
+    <div class="m-foot"><button class="btn-primary" data-close>Done</button></div>`);
+}

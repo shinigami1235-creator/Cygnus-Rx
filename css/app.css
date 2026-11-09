@@ -362,6 +362,9 @@ body.no-link .link-only{display:none}
 body.cert-mode .rx-only{display:none!important}
 .gen-wrap{position:relative;min-width:0}
 .lh-lead{margin-top:-6px}
+.steps{margin:0 0 var(--cs-3);padding-left:20px;display:grid;gap:6px}
+#link-dl{margin:var(--cs-3) 0}
+#link-dl a{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .about-top{padding:10px var(--cs-5) 10px;border-bottom:1px solid var(--cs-border);display:grid;gap:8px}
 .about-tabs{display:flex;gap:4px;padding:3px;background:var(--cs-bg,#f2f4f7);border-radius:var(--cs-r-sm);width:max-content;max-width:100%}
 .about-tab{border:0;background:none;padding:6px 14px;border-radius:6px;font:600 13px/18px var(--cs-font);color:var(--cs-text-muted);cursor:pointer}

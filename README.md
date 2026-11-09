@@ -171,7 +171,19 @@ you open only for two things that go over the clinic wifi: signing on a tablet,
 and sending a PDF to a patient's phone by QR code. Close its window when you
 are done and it stops.
 
-1. Double-click **Cygnus Rx Link** in the Cygnus Rx folder. A small window
+To install it, open Doctor and clinic in Cygnus Rx and click **Download for
+Windows**, then open Cygnus Rx Link Setup.exe. Windows warns the first time,
+since the installer is not signed with a paid certificate: click More info,
+then Run anyway. It installs for your own user without an administrator
+password, adds Cygnus Rx Link to the Start menu and the desktop, and is removed
+from Settings, Apps, Installed apps. The direct address is
+https://shinigami1235-creator.github.io/Cygnus-Rx/downloads/Cygnus-Rx-Link-Setup.exe.
+
+The Mac app is built by `scripts/build.sh` as dist/Cygnus Rx Link (Mac).zip,
+for Apple chip and Intel Macs, but is not offered for download until it is
+signed for the whole app.
+
+1. Open **Cygnus Rx Link** from the Start menu or the desktop. A small window
    says it is on.
 2. In Cygnus Rx, click **Sign on tablet**, or finish a prescription to get the
    patient's QR code.

@@ -263,7 +263,8 @@ export async function openHandoff() {
     const m = openModal(`
       <div class="m-head"><h2>Sign on tablet</h2><button class="icon-btn" data-close aria-label="Close">×</button></div>
       <div class="m-body" style="max-width:460px">
-        <p style="margin-top:0">Signing on a tablet goes through Cygnus Rx Link on this computer. Double-click <b>Cygnus Rx Link</b> in the Cygnus Rx folder, then press Try again.</p>
+        <p style="margin-top:0">Signing on a tablet goes through Cygnus Rx Link on this computer. Open <b>Cygnus Rx Link</b> from the Start menu or the desktop, then press Try again.</p>
+        <p class="meta">Not installed yet? <a href="downloads/Cygnus-Rx-Link-Setup.exe" download>Download Cygnus Rx Link for Windows</a>.</p>
         <p class="meta">If Chrome asks whether Cygnus Rx may look for devices on your network, click Allow.</p>
       </div>
       <div class="m-foot"><button class="btn-ghost" data-close>Cancel</button><button class="btn-primary" id="ho-retry">Try again</button></div>`);
