@@ -1142,7 +1142,8 @@ function bindProfile() {
     const c = e.target.dataset.c;
     if (!c) return;
     data.profile.accent = c; save();
-    $$('.swatch').forEach(s => s.classList.toggle('on', s.dataset.c === c));
+    $$('#swatches .swatch').forEach(s => s.classList.toggle('on', s.dataset.c === c));
+    renderHead();
   };
   $('#logo-pick').onclick = () => $('#logo-file').click();
   $('#folder-pick').onclick = async () => {
@@ -1209,7 +1210,7 @@ function fillProfile() {
     else el.value = v ?? '';
   });
   $('#counter').value = Math.max(data.counter, highestUsed() + 1);
-  $$('.swatch').forEach(s => s.classList.toggle('on', s.dataset.c === (data.profile.accent || '#101C2B')));
+  $$('#swatches .swatch').forEach(s => s.classList.toggle('on', s.dataset.c === (data.profile.accent || '#101C2B')));
   renderFolder();
   renderPrepEdit();
   renderHead();
@@ -1246,6 +1247,30 @@ function renderPrepEdit() {
 // profile.head: { align, nameSize, caps, labels, order, hidden, logos, schedule,
 // schedTitle, schedLayout }. Logos live in data.archive by key, so an issued
 // prescription still finds the logo it was printed with.
+
+// Colours offered for each line of the letterhead, and what a line prints in
+// until one is chosen.
+const TEXT_COLORS = [
+  ['#111111', 'Black'], ['#5b6270', 'Grey'], ['#101C2B', 'Navy'], ['#1E3F95', 'Royal blue'], ['#14497A', 'Blue'],
+  ['#0E5E63', 'Teal'], ['#2E6B30', 'Green'], ['#6B1F2A', 'Maroon'], ['#7A5A1C', 'Bronze'],
+];
+const EXTRA_NAMES = { icons: 'Schedule icons', divider: 'Line between clinics', rule: 'Line under the letterhead' };
+function colorOf(h, k) {
+  if (h.colors?.[k]) return h.colors[k];
+  if (k === 'icons') return colorOf(h, 'schedule');
+  const accent = data.profile.accent || '#101C2B';
+  return { name: accent, rule: accent, address: '#5b6270', divider: '#9aa1ab' }[k]
+    || (h.labels !== 'full' && ['phone', 'email', 'hours'].includes(k) ? '#5b6270' : '#111111');
+}
+let openColor = null;
+function colorRow(h, k) {
+  if (openColor !== k) return '';
+  const cur = colorOf(h, k).toLowerCase();
+  return `<div class="lh-pal" data-k="${k}">${TEXT_COLORS.map(([c, n]) => `<button class="swatch sm${c.toLowerCase() === cur ? ' on' : ''}" data-color="${c}" title="${n}" aria-label="${n}" style="background:${c}"></button>`).join('')}
+    <label class="lh-own" title="Any colour">Other<input type="color" data-color-own value="${cur}"></label>
+    <button class="btn-ghost sm" data-color="">Default</button></div>`;
+}
+const dot = (h, k, label) => `<button class="lh-dot${h.colors?.[k] ? ' set' : ''}" data-a="color" data-ck="${k}" style="background:${colorOf(h, k)}" aria-label="Colour of ${label}" aria-expanded="${openColor === k}"></button>`;
 
 const HEAD_NAMES = { name: 'Name', specialty: 'Specialty', clinic: 'Clinic name', address: 'Address', phone: 'Phone', email: 'Email', hours: 'Clinic hours', schedule: 'Clinic schedule' };
 
@@ -1310,9 +1335,11 @@ function renderHead() {
   $('#lh-align').value = h.align || 'center';
   $('#lh-size').value = String(h.nameSize || 1);
   $('#lh-labels').value = h.labels || 'short';
-  $('#lh-caps').checked = !!h.caps;
+  $('#lh-caps').checked = h.capsName ?? !!h.caps;
+  $('#lh-caps-spec').checked = h.capsSpec ?? !!h.caps;
   $('#lh-sched-title').value = h.schedTitle ?? '';
   $('#lh-sched-layout').value = h.schedLayout || 'stacked';
+  $('#lh-sched-title').placeholder = h.schedLayout === 'icons' ? 'None' : 'Clinic Schedule:';
   $('#logo-pick').disabled = h.logos.length >= 4;
   $('#lh-logo-list').innerHTML = h.logos.map((l, i) => `
     <div class="lh-logo-row" data-i="${i}">
@@ -1325,12 +1352,15 @@ function renderHead() {
   $('#lh-lines').innerHTML = order.map((k, i) => `
     <div class="lh-line" data-k="${k}">
       <label class="check">${k === 'name' ? '<input type="checkbox" checked disabled>' : `<input type="checkbox" data-a="show" ${h.hidden?.[k] ? '' : 'checked'}>`} ${HEAD_NAMES[k]}</label>
-      <span><button class="icon-btn" data-a="up" aria-label="Move ${HEAD_NAMES[k]} up" ${i <= 1 || k === 'name' ? 'disabled' : ''}>↑</button><button class="icon-btn" data-a="down" aria-label="Move ${HEAD_NAMES[k]} down" ${i === order.length - 1 || k === 'name' ? 'disabled' : ''}>↓</button></span>
-    </div>`).join('');
+      <span>${dot(h, k, HEAD_NAMES[k])}<button class="icon-btn" data-a="up" aria-label="Move ${HEAD_NAMES[k]} up" ${i <= 1 || k === 'name' ? 'disabled' : ''}>↑</button><button class="icon-btn" data-a="down" aria-label="Move ${HEAD_NAMES[k]} down" ${i === order.length - 1 || k === 'name' ? 'disabled' : ''}>↓</button></span>
+    </div>${colorRow(h, k)}`).join('');
+  $('#lh-extra').innerHTML = Object.entries(EXTRA_NAMES).map(([k, n]) => `
+    <div class="lh-line" data-k="${k}"><span class="lh-name">${n}</span><span>${dot(h, k, n)}<span class="lh-gap"></span></span></div>${colorRow(h, k)}`).join('');
   $('#lh-sched').innerHTML = (h.schedule || []).map((c, i) => `
     <div class="lh-clinic" data-i="${i}">
       <label class="f">Clinic or hospital<input data-c="place" value="${esc(c.place || '')}" placeholder="Asia Pacific Medical Center"></label>
       <label class="f">Days and hours<textarea class="field" data-c="times" rows="2" placeholder="MWF: 2 - 5 PM">${esc(c.times || '')}</textarea></label>
+      <label class="f">For appointments<input data-c="phone" value="${esc(c.phone || '')}" placeholder="0956 711 2198" inputmode="tel"></label>
       <button class="icon-btn" data-a="del" aria-label="Remove this clinic">×</button>
     </div>`).join('');
   headPreview();
@@ -1371,7 +1401,28 @@ function bindHead() {
   $('#lh-align').onchange = e => { head().align = e.target.value; changed(false); };
   $('#lh-size').onchange = e => { head().nameSize = +e.target.value; changed(false); };
   $('#lh-labels').onchange = e => { head().labels = e.target.value; changed(false); };
-  $('#lh-caps').onchange = e => { head().caps = e.target.checked; changed(false); };
+  const fixCaps = h => { if (h.capsName === undefined) { h.capsName = h.capsSpec = !!h.caps; } delete h.caps; return h; };
+  $('#lh-caps').onchange = e => { fixCaps(head()).capsName = e.target.checked; changed(false); };
+  $('#lh-caps-spec').onchange = e => { fixCaps(head()).capsSpec = e.target.checked; changed(false); };
+  for (const box of ['#lh-lines', '#lh-extra']) {
+    $(box).addEventListener('click', e => {
+      const b = e.target.closest('[data-a=color]');
+      if (b) { openColor = openColor === b.dataset.ck ? null : b.dataset.ck; renderHead(); $(`${box} [data-ck="${b.dataset.ck}"]`)?.focus(); return; }
+      const c = e.target.closest('[data-color]');
+      if (!c) return;
+      const h = head(), k = c.closest('.lh-pal').dataset.k;
+      h.colors = { ...h.colors };
+      if (c.dataset.color) h.colors[k] = c.dataset.color; else delete h.colors[k];
+      changed();
+    });
+    $(box).addEventListener('input', e => {
+      if (!e.target.matches('[data-color-own]')) return;
+      const h = head();
+      h.colors = { ...h.colors, [e.target.closest('.lh-pal').dataset.k]: e.target.value };
+      e.target.closest('.lh-pal').previousElementSibling.querySelector('.lh-dot').style.background = e.target.value;
+      changed(false);
+    });
+  }
   $('#lh-sched-title').oninput = e => { head().schedTitle = e.target.value; changed(false); };
   $('#lh-sched-layout').onchange = e => { head().schedLayout = e.target.value; changed(false); };
   $('#lh-lines').addEventListener('click', e => {

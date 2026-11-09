@@ -397,10 +397,21 @@ body.cert-mode .rx-only{display:none!important}
 .lh-line{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;border-top:1px solid var(--cs-border)}
 .lh-line:first-child{border-top:0}
 .lh-line .check{margin:0}
-.lh-clinic{display:grid;grid-template-columns:1fr 1fr auto;gap:var(--cs-3);align-items:start;margin-bottom:var(--cs-3)}
+.lh-line>span:last-child{display:flex;align-items:center;gap:4px}
+.lh-extra{margin-top:-1px}
+.lh-name{font:var(--cs-label);color:var(--cs-text);padding-left:32px}
+.lh-extra .lh-line{min-height:43px}
+.lh-gap{display:inline-block;width:72px}
+.lh-dot{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--cs-border-strong);cursor:pointer;margin-right:6px;padding:0}
+.lh-dot.set{box-shadow:0 0 0 2px var(--cs-primary-400)}
+.lh-pal{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px 10px;background:var(--cs-surface-2,#f6f7f9)}
+.swatch.sm{width:26px;height:26px}
+.lh-own{display:inline-flex;align-items:center;gap:6px;font:var(--cs-micro);color:var(--cs-text-meta);margin:0 4px}
+.lh-own input{width:30px;height:26px;padding:0;border:1px solid var(--cs-border-strong);border-radius:6px;background:none;cursor:pointer}
+.lh-clinic{display:grid;grid-template-columns:1.2fr 1fr .8fr auto;gap:var(--cs-3);align-items:start;margin-bottom:var(--cs-3)}
 .lh-clinic>*{min-width:0}
 .lh-clinic .icon-btn{margin-top:22px}
-@media (max-width:640px){.lh-clinic{grid-template-columns:1fr auto}.lh-clinic label:nth-child(2){grid-column:1}}
+@media (max-width:640px){.lh-clinic{grid-template-columns:1fr auto}.lh-clinic label:nth-child(2),.lh-clinic label:nth-child(3){grid-column:1}}
 .gen-pop{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;max-height:320px;overflow:auto;background:var(--cs-surface,#fff);border:1px solid var(--cs-border);border-radius:var(--cs-r-sm);box-shadow:0 8px 24px rgba(16,28,43,.14)}
 .gen-row{display:flex;justify-content:space-between;align-items:center;gap:var(--cs-3);padding:9px 12px;font:400 14px/18px var(--cs-font);color:var(--cs-text);cursor:pointer}
 .gen-row:hover,.gen-row.on{background:var(--cs-primary-50)}

@@ -86,6 +86,14 @@ export function medTitle(m) {
   return [m.generic, m.strength, m.form].map(s => (s || '').trim()).filter(Boolean).join(' ');
 }
 
+// Small filled icons in a 24 point box for the clinic schedule. Each is a list
+// of [path, colour]; null takes the icon colour, and white cuts the holes.
+export const ICONS = {
+  pin: [['M12 1.5C8 1.5 4.8 4.7 4.8 8.7c0 5.4 7.2 13.8 7.2 13.8s7.2-8.4 7.2-13.8c0-4-3.2-7.2-7.2-7.2z', null], ['M14.6 8.7a2.6 2.6 0 1 1-5.2 0 2.6 2.6 0 1 1 5.2 0z', '#ffffff']],
+  clock: [['M22 12a10 10 0 1 1-20 0 10 10 0 1 1 20 0z', null], ['M11 5.5h2v6.6l3.8 3.8-1.4 1.4-4.4-4.4z', '#ffffff']],
+  phone: [['M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .7-.2 1z', null]],
+};
+
 // The letterhead lines in their default order. The name is always first.
 export const HEAD_ORDER = ['name', 'specialty', 'clinic', 'address', 'phone', 'email', 'hours', 'schedule'];
 
@@ -160,7 +168,10 @@ function build(rx, profile, images, scale) {
     const al = h.align || 'center';
     const ax = al === 'left' ? left : al === 'right' ? right : (left + right) / 2;
     const full = h.labels === 'full';
-    const caps = s => h.caps ? s.toUpperCase() : s;
+    const capsName = h.capsName ?? !!h.caps, capsSpec = h.capsSpec ?? !!h.caps;
+    const caps = s => capsName ? s.toUpperCase() : s;
+    // h.colors holds a colour for any line the doctor changed
+    const col = (key, def) => h.colors?.[key] || def;
     const hidden = h.hidden || {};
     const order = h.order || HEAD_ORDER;
 
@@ -172,7 +183,7 @@ function build(rx, profile, images, scale) {
     let ns = nameSize, nameLines = [name];
     while (width(clean(name, 'bold'), 'bold', ns) > tw && ns > nameSize * 0.8) ns -= 0.25;
     if (width(clean(name, 'bold'), 'bold', ns) > tw) { ns = nameSize * 0.85; nameLines = wrap(name, 'bold', ns, tw); }
-    nameLines.forEach((l, i) => { ty += i ? ns * 1.15 : ns * 0.95; text(ax, ty, l, 'bold', ns, accent, al); });
+    nameLines.forEach((l, i) => { ty += i ? ns * 1.15 : ns * 0.95; text(ax, ty, l, 'bold', ns, col('name', accent), al); });
     ty += 2 * k;
 
     const put = (parts, size, color = ink) => {
@@ -182,38 +193,78 @@ function build(rx, profile, images, scale) {
     const shown = order.filter(key => key !== 'name' && !hidden[key]);
     for (let i = 0; i < shown.length; i++) {
       const key = shown[i];
-      if (key === 'specialty' && profile.specialty) put([[caps(profile.specialty), h.caps ? 'bold' : 'reg']], 8.5 * k);
-      else if (key === 'clinic' && profile.clinic) put([[profile.clinic, 'bold']], 8 * k);
-      else if (key === 'address' && profile.address) for (const l of wrap(profile.address, 'reg', 7.5 * k, tw)) put([[l, 'reg']], 7.5 * k, soft);
+      if (key === 'specialty' && profile.specialty) put([[capsSpec ? profile.specialty.toUpperCase() : profile.specialty, capsSpec ? 'bold' : 'reg']], 8.5 * k, col('specialty', ink));
+      else if (key === 'clinic' && profile.clinic) put([[profile.clinic, 'bold']], 8 * k, col('clinic', ink));
+      else if (key === 'address' && profile.address) for (const l of wrap(profile.address, 'reg', 7.5 * k, tw)) put([[l, 'reg']], 7.5 * k, col('address', soft));
       else if (key === 'phone' && profile.phone) {
-        if (full) put([['Contact Numbers: ', 'bold'], [profile.phone, 'reg']], 8 * k);
-        else if (shown[i + 1] === 'email' && profile.email) { put([['Tel. ' + profile.phone + '   ' + profile.email, 'reg']], 7.5 * k, soft); i++; }
-        else put([['Tel. ' + profile.phone, 'reg']], 7.5 * k, soft);
+        if (full) put([['Contact Numbers: ', 'bold'], [profile.phone, 'reg']], 8 * k, col('phone', ink));
+        else if (shown[i + 1] === 'email' && profile.email) { put([['Tel. ' + profile.phone + '   ' + profile.email, 'reg']], 7.5 * k, col('phone', soft)); i++; }
+        else put([['Tel. ' + profile.phone, 'reg']], 7.5 * k, col('phone', soft));
       }
-      else if (key === 'email' && profile.email) put(full ? [['Email Address: ', 'bold'], [profile.email, 'reg']] : [[profile.email, 'reg']], full ? 8 * k : 7.5 * k, full ? ink : soft);
-      else if (key === 'hours' && profile.hours) put(full ? [['Clinic Hours: ', 'bold'], [profile.hours, 'reg']] : [[profile.hours, 'reg']], 7.5 * k, full ? ink : soft);
-      else if (key === 'schedule') ty = schedule(h, ty, left, tw);
+      else if (key === 'email' && profile.email) put(full ? [['Email Address: ', 'bold'], [profile.email, 'reg']] : [[profile.email, 'reg']], full ? 8 * k : 7.5 * k, col('email', full ? ink : soft));
+      else if (key === 'hours' && profile.hours) put(full ? [['Clinic Hours: ', 'bold'], [profile.hours, 'reg']] : [[profile.hours, 'reg']], 7.5 * k, col('hours', full ? ink : soft));
+      else if (key === 'schedule') ty = schedule(h, ty, left, tw, col);
     }
     const logoBottom = Math.max(0, ...logos.map(l => l.y + l.h));
     const bottom = Math.max(ty + 4 * k, logoBottom + 2 * k) + 4 * k;
-    line(M, bottom, W - M, bottom, 1.4 * k, accent);
+    line(M, bottom, W - M, bottom, 1.4 * k, col('rule', accent));
     return bottom;
   }
 
+  const icon = (name, x, y, size, color) => ops.push({ t: 'icon', name, x, y, size, color });
+
   // Clinic schedule: each clinic in bold with its days and hours under it,
   // one under another or side by side in columns.
-  function schedule(h, ty, left, tw) {
-    const places = (h.schedule || []).filter(c => (c.place || '').trim() || (c.times || '').trim());
+  // With icons, each clinic has a pin by the place, a clock by the hours and
+  // a phone by the number for appointments, in columns split by a thin line.
+  function schedule(h, ty, left, tw, col) {
+    const places = (h.schedule || []).filter(c => (c.place || '').trim() || (c.times || '').trim() || (c.phone || '').trim());
     if (!places.length) return ty;
     const fs = 7.5 * k, lh = 9 * k;
-    ty += 5 * k;
-    if (h.schedTitle !== '') { ty += lh; text(left, ty, h.schedTitle || 'Clinic Schedule:', 'bold', fs, ink); }
+    const sc = col('schedule', ink);
+    const icons = h.schedLayout === 'icons';
+    ty += (icons ? 3 : 5) * k;
+    const title = h.schedTitle ?? (icons ? '' : 'Clinic Schedule:');
+    if (title !== '') { ty += lh; text(left, ty, title || 'Clinic Schedule:', 'bold', fs, sc); }
+    const appt = c => (c.phone || '').trim() ? 'For appointments: ' + c.phone.trim() : '';
     const block = (c, x, w, y0) => {
       let yy = y0;
-      if (c.place) for (const l of wrap(c.place, 'bold', fs, w)) { yy += lh; text(x, yy, l, 'bold', fs, ink); }
-      for (const t of (c.times || '').split('\n')) for (const l of wrap(t, 'reg', fs, w)) { if (!l) continue; yy += lh; text(x, yy, l, 'reg', fs, ink); }
+      if (c.place) for (const l of wrap(c.place, 'bold', fs, w)) { yy += lh; text(x, yy, l, 'bold', fs, sc); }
+      for (const t of (c.times || '').split('\n')) for (const l of wrap(t, 'reg', fs, w)) { if (!l) continue; yy += lh; text(x, yy, l, 'reg', fs, sc); }
+      for (const l of wrap(appt(c), 'reg', fs, w)) { if (!l) continue; yy += lh; text(x, yy, l, 'reg', fs, sc); }
       return yy;
     };
+    if (icons) {
+      const isz = fs * 1.3, ind = isz + 4 * k, gap = 12 * k;
+      const ic = col('icons', sc);
+      const n = Math.min(places.length, 3);
+      const cw = (tw - gap * (n - 1)) / n;
+      const group = (name, lines, x, w, yy) => {
+        lines = lines.flatMap(t => wrap(t, 'reg', fs, w - ind)).filter(Boolean);
+        lines.forEach((l, i) => {
+          yy += i ? lh : lh + 2.5 * k;
+          if (!i) icon(name, x, yy - fs * 0.36 - isz / 2, isz, ic);
+          text(x + ind, yy, l, 'reg', fs, sc);
+        });
+        return yy;
+      };
+      let rowTop = ty;
+      for (let r = 0; r < places.length; r += n) {
+        const ends = places.slice(r, r + n).map((c, i) => {
+          const x = left + i * (cw + gap);
+          let yy = group('pin', [c.place || ''], x, cw, rowTop);
+          yy = group('clock', (c.times || '').split('\n'), x, cw, yy);
+          return group('phone', [appt(c)], x, cw, yy);
+        });
+        const end = Math.max(...ends) + 2 * k;
+        for (let i = 1; i < ends.length; i++) {
+          const dx = left + i * (cw + gap) - gap / 2;
+          line(dx, rowTop + 3 * k, dx, end, 0.8 * k, col('divider', '#9aa1ab'));
+        }
+        rowTop = end + 2 * k;
+      }
+      return rowTop - 4 * k;
+    }
     if (h.schedLayout === 'columns') {
       const n = Math.min(places.length, 3);
       const cw = tw / n;
@@ -520,7 +571,7 @@ export function layoutRx(rx, profile, images = {}) {
       const off = Math.max(0, (p.limit - 14 * (p.w / 420) - p.bodyEnd) * 0.42);
       if (!off) return;
       for (const o of p.ops.filter(o => o.body)) {
-        if (o.t === 'line') { o.y1 += off; o.y2 += off; } else if (o.t === 'text' || o.t === 'img') o.y += off;
+        if (o.t === 'line') { o.y1 += off; o.y2 += off; } else if (o.t === 'text' || o.t === 'img' || o.t === 'icon') o.y += off;
       }
     });
   }

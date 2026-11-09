@@ -208,19 +208,22 @@
         <span class="meta">Up to 4, such as the clinic logo and society seals. A PNG with a clear background prints cleanest.</span></div>
       <div class="grid g-2 lh-grid">
         <label class="f">Text<select id="lh-align"><option value="center">Centred</option><option value="left">Left</option><option value="right">Right</option></select></label>
-        <label class="f">Name size<select id="lh-size"><option value="0.85">Small</option><option value="1">Medium</option><option value="1.2">Large</option></select></label>
+        <label class="f">Name size<select id="lh-size"><option value="0.85">Small</option><option value="1">Medium</option><option value="1.2">Large</option><option value="1.45">Extra large</option></select></label>
         <label class="f span2">Phone and email<select id="lh-labels"><option value="short">Tel. 0917 123 4567   clinic@example.com</option><option value="full">Contact Numbers: and Email Address: in bold, one line each</option></select></label>
       </div>
-      <label class="check"><input type="checkbox" id="lh-caps"> Name and specialty in capitals</label>
+      <div class="row-gap"><label class="check"><input type="checkbox" id="lh-caps"> Name in capitals</label>
+        <label class="check"><input type="checkbox" id="lh-caps-spec"> Specialty in bold capitals</label></div>
       <h3 class="lh-h3">Lines, in order</h3>
+      <p class="meta">Click the dot by a line to change its colour.</p>
       <div class="lh-lines" id="lh-lines"></div>
+      <div class="lh-lines lh-extra" id="lh-extra"></div>
       <h3 class="lh-h3">Clinic schedule</h3>
-      <p class="meta">For a doctor at more than one clinic. Each clinic prints in bold with its days and hours under it.</p>
+      <p class="meta">For a doctor at more than one clinic. Each clinic prints with its days, hours and number for appointments. With icons puts a pin, a clock and a phone by each and a line between clinics.</p>
       <div id="lh-sched"></div>
       <button class="btn-ghost sm" id="lh-sched-add">+ Add a clinic</button>
       <div class="grid g-2 lh-grid">
         <label class="f">Heading<input id="lh-sched-title" placeholder="Clinic Schedule:"></label>
-        <label class="f">Layout<select id="lh-sched-layout"><option value="stacked">One under another</option><option value="columns">Side by side</option></select></label>
+        <label class="f">Layout<select id="lh-sched-layout"><option value="stacked">One under another</option><option value="columns">Side by side</option><option value="icons">With icons, side by side</option></select></label>
       </div>
     </div>
     <div class="card">

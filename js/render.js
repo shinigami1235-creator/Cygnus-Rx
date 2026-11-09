@@ -2,6 +2,7 @@
 // and into a PDF with pdf-lib for the finished prescription.
 
 import { PDFDocument, StandardFonts, rgb } from '../vendor/pdf-lib.mjs';
+import { ICONS } from './layout.js';
 
 const CSS_FONT = {
   reg: (s) => `${s}px Helvetica, Arial, "Liberation Sans", sans-serif`,
@@ -56,6 +57,12 @@ export function drawPage(canvas, page, images, cssWidth) {
     } else if (o.t === 'img') {
       const im = images[o.key]?.el;
       if (im) ctx.drawImage(im, o.x, o.y, o.w, o.h);
+    } else if (o.t === 'icon') {
+      ctx.save();
+      ctx.translate(o.x, o.y);
+      ctx.scale(o.size / 24, o.size / 24);
+      for (const [d, c] of ICONS[o.name]) { ctx.fillStyle = c || o.color; ctx.fill(new Path2D(d)); }
+      ctx.restore();
     }
   }
 }
@@ -105,6 +112,8 @@ export async function buildPdf(pages, images, meta = {}) {
         page.drawLine({ start: { x: o.x1, y: p.h - o.y1 }, end: { x: o.x2, y: p.h - o.y2 }, thickness: o.w, color: hex(o.color) });
       } else if (o.t === 'img' && embedded[o.key]) {
         page.drawImage(embedded[o.key], { x: o.x, y: p.h - o.y - o.h, width: o.w, height: o.h });
+      } else if (o.t === 'icon') {
+        for (const [d, c] of ICONS[o.name]) page.drawSvgPath(d, { x: o.x, y: p.h - o.y, scale: o.size / 24, color: hex(c || o.color), borderWidth: 0 });
       }
     }
   }

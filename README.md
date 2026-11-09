@@ -94,11 +94,21 @@ back on a margin. The text keeps clear of logos on the left and right and goes
 under a logo in the middle, and a long name goes on two lines rather than run
 under a logo.
 
-The text can be centred, left or right, with the name small, medium or large,
-the name and specialty in capitals, and the phone and email as one short line
-or as Contact Numbers: and Email Address: in bold. Each line can be hidden or
-moved up and down. Clinic schedule lists each clinic in bold with its days and
-hours under it, one under another or side by side.
+The text can be centred, left or right, with the name small, medium, large or
+extra large, the name in capitals, the specialty in bold capitals, and the
+phone and email as one short line or as Contact Numbers: and Email Address: in
+bold. Each line can be hidden or moved up and down. The dot by a line changes
+its colour, from 9 colours or any other, and Default puts it back. The
+schedule icons, the line between clinics and the line under the letterhead
+have their own dots.
+
+Clinic schedule lists each clinic with its days, hours and number for
+appointments, one under another, side by side, or side by side with icons: a
+pin by the place, a clock by the hours, a phone by the number, and a thin line
+between clinics. Dr. Escultero's letterhead is a seal on the left, text on the
+left, the name extra large in royal blue, the specialty in bold capitals, the
+clinic, address, phone, email and hours lines unticked, and two clinics with
+icons.
 
 A prescription already issued keeps the letterhead it was printed with. The
 single logo of older versions becomes the first logo, with the text beside it.
@@ -302,6 +312,7 @@ node tests/layout.mjs http://localhost:8080
 node tests/mobile.mjs http://localhost:8080      # phone and tablet sizes, no Link
 node tests/prep.mjs http://localhost:8080        # editing the patient preparation lines
 node tests/sigfile.mjs http://localhost:8080     # signature saved as a file and loaded back
+node tests/headcolors.mjs http://localhost:8080   # letterhead colours and the schedule with icons
 sh tests/security.sh 192.0.2.2 7718     # what the wifi and other web pages can reach
 node scripts/lint-strings.mjs web/index.html web/js/*.js web/public/*.html README.md
 ```
